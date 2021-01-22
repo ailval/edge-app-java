@@ -150,14 +150,16 @@
         app.sendMessage(msgData);
         
         
-  注意事项：
-  （1）目前仅支持Docker方式启动
-  （2）需配置必要的系统参数如：
-     EDGE_HUB_PROTO: tcp
-     EDGE_HUB_HOST: 127.0.0.1 (例)
-     EDGE_HUB_PORT: 1883
-     EDGE_APP_ID: xxxxxxxxx(按实际替换)
-     EDGE_DEVICE_ID：iotd-xxxxxxxxx（按实际替换）
-     EDGE_THING_ID：iott-xxxxx（按实际替换）
-   （3）构建项目需JDK8.0以上，依赖fastjson库
+    注意事项：
+    （1）目前仅支持Docker方式启动 
+    （2）需配置必要的系统参数如：
+        EDGE_HUB_PROTO: tcp    
+        EDGE_HUB_HOST: 127.0.0.1 (例)    
+        EDGE_HUB_PORT: 1883    
+        EDGE_APP_ID: xxxxxxxxx(按实际替换)    
+        EDGE_DEVICE_ID：iotd-xxxxxxxxx（按实际替换）    
+        EDGE_THING_ID：iott-xxxxx（按实际替换）    
+     （3）构建项目需JDK8.0以上，依赖fastjson库    
+        EDGE_HUB_PROTO: tcp    
+        
 
