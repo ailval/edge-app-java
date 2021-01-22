@@ -5,7 +5,6 @@ import com.qingcloud.iot.common.*;
 import com.qingcloud.iot.core.*;
 import com.qingcloud.iot.core.mqttclient.IoTMqttClient;
 import com.qingcloud.iot.core.topic.Topic;
-import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 import java.util.ArrayList;
@@ -17,22 +16,24 @@ public class TestAppCoreClient {
 
     public static void main(String[] args) throws Exception {
         testPublishProperty();
-//        testPublishEvent();
     }
 
+    /**
+     * 测试消息属性
+     * @throws Exception
+     */
     private static void testPublishProperty() throws Exception {
-
+        //构造启动方式
         AppCoreClient app = new AppCoreClient(CommonConst.AppSdkRuntimeType.RuntimeType_Exec);
 
-        //Exec
-//        app.setAppType(CommonConst.AppSdkRuntimeType.RuntimeType_Exec);
-        //docker
+        //设置启动方式docker（如果构造时已经指定，这里不用设置）
         app.setAppType(CommonConst.AppSdkRuntimeType.RuntimeType_Docker);
 
-        //app run
+        //app初始化，启动
         app.init();
         app.start();
 
+        //获取调试用信息
         System.out.println("app getAppType:" + app.getAppType());
         System.out.println("app getUrl:" + app.getUrl());
         System.out.println("app getCfg:" + app.getCfg());
@@ -52,10 +53,12 @@ public class TestAppCoreClient {
         System.out.println("app getCodec getDeviceId:" + app.getCodec().getDeviceId());
         System.out.println("app getCodec getThingId:" + app.getCodec().getThingId());
 
+        //对应的设备ID，模型ID和APP ID
         //ioTMqttClient
-        //sourceId,entityId,deviceId=iotd-bd4c7c54-496d-487b-bc1d-66e2574c5153
-        //modelId,thingId=iott-8p1EKZQLab
+        //sourceId,entityId,deviceId=iotd-xxxxx
+        //modelId,thingId=iott-xxxxx
 
+        //消息回调
         IMessageCallback messageCallback = new IMessageCallback() {
             public void messageCallback(String topic,byte[] payload) {
                 System.out.println("messageCallback topic:" + topic + ", payload:" + new String(payload));
@@ -63,6 +66,7 @@ public class TestAppCoreClient {
         };
         app.getIoTMqttClient().setMessageCallback(messageCallback);
 
+        //消息回调
         IEventCallback eventCallback = new IEventCallback() {
             public void eventCallback(AppSdkEventData data, Object obj) {
                 System.out.println("eventCallback topic:" + data.type + ", payload:" + obj.toString());
@@ -70,7 +74,7 @@ public class TestAppCoreClient {
         };
         app.getIoTMqttClient().setEventCallback(eventCallback);
 
-
+        //建立连接时回调
         app.setConnectStatusCB(new OnConnectStatusCB() {
             @Override
             public void onConnectStatusCB(boolean bool,String details) {
@@ -78,18 +82,14 @@ public class TestAppCoreClient {
             }
         });
 
+        //初始化完成后，可获取MQTT客户端的APP ID
         IoTMqttClient ioTMqttClient = app.getIoTMqttClient();
-        System.out.println("-- getIoTMqttClient:" + app.getClientId());
-        System.out.println("-- getIoTMqttClient:" + ioTMqttClient.getToken().toString());
 
         String appId = app.getCfg().getAppId();
-        String deviceId = app.getCodec().getDeviceId();
-        String thingId = app.getCfg().getThingId();
         String identifier = app.getCodec().getThingId();
 
         Topic topic = new Topic();
-        ArrayList<MqttMessage> arrayList = new ArrayList<MqttMessage>();
-
+        //设置topic
         topic.equipPublishPropertyTopic(appId);
         topic.equipSubscribePropertyTopic(appId);
 
@@ -99,6 +99,7 @@ public class TestAppCoreClient {
         topic.equipPublishServiceTopic(appId,identifier);
         topic.equipSubscribeServiceTopic(appId,identifier);
 
+        //多个topic，便于统一订阅
         String[] topics = {topic.getSubscribePropertyTopic(),topic.getSubscribeEventTopic(),topic.getSubscribeServiceTopic()};
 
         int i;
@@ -109,26 +110,33 @@ public class TestAppCoreClient {
         ioTMqttClient.subscribeMultiple(topics, messageCallback);
         ioTMqttClient.setTopics(topics);
 
+        //测试app停止
         app.stop();
         app.cleanup();
 
+        //测试 重新初始化和启动边缘APP
         app.init();
         app.start();
 
+        //获取建立连接的MQTT客户端
         ioTMqttClient = app.getIoTMqttClient();
+
+        //订阅topics（可单独订阅，也可统一订阅）
         ioTMqttClient.subscribeMultiple(topics, messageCallback);
 
+        //推送消息
         ioTMqttClient.publish(topic.getPublishPropertyTopic(),0,"hello msg".getBytes());
         ioTMqttClient.publish(topic.getSubscribePropertyTopic(), 0, "hello msg".getBytes());
 
         ioTMqttClient.publish(topic.getPublishEventTopic(),0,"hello evt".getBytes());
         ioTMqttClient.publish(topic.getSubscribeEventTopic(), 0, "hello evt".getBytes());
 
+        //设置边缘应用消息的数据
         AppSdkMessageData msgData = new AppSdkMessageData();
         msgData.setType(CommonConst.AppSdkMessageType.MessageType_Property);
 
         AppSdkMsgProperty msgProperty1 = new AppSdkMsgProperty();
-        msgProperty1.identifier = "order_no";
+        msgProperty1.identifier = "order_no"; //对应物模型的字段标识符
         msgProperty1.timestamp = 1111;
         msgProperty1.value = "11111";
         AppSdkMsgProperty msgProperty2 = new AppSdkMsgProperty();
@@ -145,6 +153,7 @@ public class TestAppCoreClient {
         list.add(msgProperty2);
         list.add(msgProperty3);
 
+        //内部暂时借助fastjson进行序列化
         String jsonStr = JSON.toJSONString(list);
 
         List<AppSdkMsgProperty> list1 = JSON.parseArray(jsonStr, AppSdkMsgProperty.class);
@@ -156,9 +165,14 @@ public class TestAppCoreClient {
         System.out.println("jsonStr:" + jsonStr);
         msgData.setPayload(jsonStr.getBytes());
 
+        //发送边缘消息
         app.sendMessage(msgData);
     }
 
+    /**
+     * 测试消息事件
+     * @throws Exception
+     */
     private static void testPublishEvent() throws Exception {
         Object msgObj = new Object();
         Object evtObj = new Object();
@@ -193,10 +207,6 @@ public class TestAppCoreClient {
         //app run
         app.init();
         app.start();
-
-        //ioTMqttClient
-        //sourceId,entityId,deviceId=iotd-bd4c7c54-496d-487b-bc1d-66e2574c5153
-        //modelId,thingId=iott-8p1EKZQLab
 
         IoTMqttClient ioTMqttClient = app.getIoTMqttClient();
 
