@@ -1,0 +1,6 @@
+protocol = tcp
+hubAddr = 139.198.178.228
+hubPort = 1883
+appId = appId
+deviceId = iotd-bd4c7c54-496d-487b-bc1d-66e2574c5153
+thingId = iott-8p1EKZQLab
