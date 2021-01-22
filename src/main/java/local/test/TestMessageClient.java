@@ -93,9 +93,5 @@ public class TestMessageClient {
 
         ioTMqttClient.subscribeMultiple(topics,messageCallback);
 
-        //断开重新连接后，无法收到先前订阅的消息
-//        ioTMqttClient.doDisconnect();
-//        ioTMqttClient.doConnect();
-
     }
 }

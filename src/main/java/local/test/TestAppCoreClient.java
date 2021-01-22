@@ -194,25 +194,6 @@ public class TestAppCoreClient {
         app.init();
         app.start();
 
-        System.out.println("app getAppType:" + app.getAppType());
-        System.out.println("app getUrl:" + app.getUrl());
-        System.out.println("app getCfg:" + app.getCfg());
-        System.out.println("app getCodec:" + app.getCodec());
-        System.out.println("app getMessageParam:" + app.getMessageParam());
-        System.out.println("app getEventParam:" + app.getEventParam());
-        System.out.println("app getServiceIds:" + app.getServiceIds());
-        System.out.println("app getIoTMqttClient:" + app.getIoTMqttClient());
-        System.out.println("app getOnConnectedCallback:" + app.getConnectStatusCB());
-        System.out.println("app getCfg getAppId:" + app.getCfg().getAppId());
-        System.out.println("app getCfg getDeviceId:" + app.getCfg().getDeviceId());
-        System.out.println("app getHubAddr:" + app.getCfg().getHubAddr());
-        System.out.println("app getCfg getHubPort:" + app.getCfg().getHubPort());
-        System.out.println("app getCfg getProtocol:" + app.getCfg().getProtocol());
-        System.out.println("app getCfg getThingId:" + app.getCfg().getThingId());
-        System.out.println("app getCodec getAppId:" + app.getCodec().getAppId());
-        System.out.println("app getCodec getDeviceId:" + app.getCodec().getDeviceId());
-        System.out.println("app getCodec getThingId:" + app.getCodec().getThingId());
-
         //ioTMqttClient
         //sourceId,entityId,deviceId=iotd-bd4c7c54-496d-487b-bc1d-66e2574c5153
         //modelId,thingId=iott-8p1EKZQLab
