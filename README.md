@@ -5,7 +5,7 @@
      */
 
         //构造启动方式
-        AppCoreClient app = new AppCoreClient(CommonConst.AppSdkRuntimeType.RuntimeType_Exec);
+        AppCoreClient app = new AppCoreClient(CommonConst.AppSdkRuntimeType.RuntimeType_Exec);  //目前仅支持Docker启动，从系统读取配置参数
 
         //设置启动方式docker（如果构造时已经指定，这里不用设置）
         app.setAppType(CommonConst.AppSdkRuntimeType.RuntimeType_Docker);
@@ -149,3 +149,14 @@
         //发送边缘消息
         app.sendMessage(msgData);
         
+        
+ 注意事项：
+ （1）目前仅支持Docker方式启动
+ （2）需配置必要的系统参数如：
+    EDGE_HUB_PROTO: tcp
+    EDGE_HUB_HOST: 127.0.0.1 (例)
+    EDGE_HUB_PORT: 1883
+    EDGE_APP_ID: xxxxxxxxx(按实际替换)
+    EDGE_DEVICE_ID：iotd-xxxxxxxxx（按实际替换）
+    EDGE_THING_ID：iott-xxxxx（按实际替换）
+ （3）构建项目需JDK8.0以上，依赖fastjson库
