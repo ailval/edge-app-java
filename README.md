@@ -160,6 +160,6 @@
         EDGE_DEVICE_ID：iotd-xxxxxxxxx（按实际替换）    
         EDGE_THING_ID：iott-xxxxx（按实际替换）    
      （3）构建项目需JDK8.0以上，依赖fastjson库    
-        EDGE_HUB_PROTO: tcp    
+       
         
 
