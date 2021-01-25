@@ -110,7 +110,7 @@ public class IoTMqttClient {
         MqttConnectOptions mqttConnectOptions = new MqttConnectOptions();
         mqttConnectOptions.setServerURIs(new String[]{url});
         mqttConnectOptions.setCleanSession(false);
-        mqttConnectOptions.setAutomaticReconnect(false);
+        mqttConnectOptions.setAutomaticReconnect(true);
         mqttConnectOptions.setKeepAliveInterval(DEFAULT_KEEP_ALIVE_DEFAULT);
         mqttConnectOptions.setConnectionTimeout(DEFAULT_WAIT_TIMEOUT);
         this.mqttConnectOptions = mqttConnectOptions;
@@ -136,17 +136,12 @@ public class IoTMqttClient {
         if ((topic == null || qos < 0 || qos > 2))
             throw new Exception("invalid arguments");
 
-        this.mqttClient.subscribe(topic,qos,new IMqttMessageListener() {
-            @Override
-            public void messageArrived(String topic,MqttMessage message) throws Exception {
-                messageCallback.messageCallback(topic, message.getPayload());
-            }
-        });
+        this.setMessageCallback(messageCallback);
+        this.mqttClient.subscribe(topic,qos);
     }
 
     public void subscribeMultiple(String[] topics, IMessageCallback messageCallback) throws MqttException {
         this.setMessageCallback(messageCallback);
-        ArrayList<IMqttMessageListener> arrayList = new ArrayList<>();
 
         for (int i=0; i<topics.length; i++) {
             if (topics[i] != null && !topics[i].equals("")) {

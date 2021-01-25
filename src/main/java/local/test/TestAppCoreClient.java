@@ -65,13 +65,6 @@ public class TestAppCoreClient {
             System.out.println("testPubProperties topics:" + topics[i]);
         }
 
-        ioTMqttClient.subscribeMultiple(topics,new IMessageCallback() {
-            @Override
-            public void messageCallback(String topic,byte[] payload) {
-                System.out.println("testPubProperties subscribeMultiple topics:" + topic + ", payload:" + new String(payload));
-            }
-        });
-
         ioTMqttClient.setMessageCallback(new IMessageCallback() {
             @Override
             public void messageCallback(String topic,byte[] payload) {
@@ -79,12 +72,18 @@ public class TestAppCoreClient {
             }
         });
 
+        ioTMqttClient.subscribeMultiple(topics,ioTMqttClient.getMessageCallback());
+
         ioTMqttClient.setOnConnectedCallback(new IOnConnectedCallback() {
             @Override
             public void onConnectedCallback(Boolean bool,String uri) {
                 System.out.println("testPubProperties onConnectedCallback:" + bool + ", URI:" + uri);
 
-                subscribeTopics(ioTMqttClient, appId, identifier);
+                try {
+                    subscribeTopics(ioTMqttClient, appId, identifier);
+                } catch (MqttException e) {
+                    e.printStackTrace();
+                }
             }
         });
 
@@ -98,7 +97,7 @@ public class TestAppCoreClient {
         ioTMqttClient.publish(topics[0],0,"Hello Mqtt".getBytes());
     }
 
-    private void subscribeTopics(IoTMqttClient ioTMqttClient, String appId, String identifier) {
+    private void subscribeTopics(IoTMqttClient ioTMqttClient, String appId, String identifier) throws MqttException {
         //多个topic，便于统一订阅
         Topic topic = new Topic();
         //设置topic
@@ -111,7 +110,6 @@ public class TestAppCoreClient {
         topic.equipPublishServiceTopic(appId,identifier);
         topic.equipSubscribeServiceTopic(appId,identifier);
 
-
         //多个topic，便于统一订阅
         String[] topics = {topic.getSubscribePropertyTopic(),topic.getSubscribeEventTopic(),topic.getSubscribeServiceTopic()};
 
@@ -121,17 +119,7 @@ public class TestAppCoreClient {
             System.out.println("testPubProperties topics:" + topics[i]);
         }
 
-        try {
-            ioTMqttClient.subscribeMultiple(topics,new IMessageCallback() {
-                @Override
-                public void messageCallback(String topic,byte[] payload) {
-                    System.out.println("testPubProperties subscribeMultiple topics:" + topic + ", payload:" + new String(payload));
-                }
-            });
-        } catch (MqttException e) {
-            e.printStackTrace();
-        }
-
+        ioTMqttClient.subscribeMultiple(topics,ioTMqttClient.getMessageCallback());
     }
 
     /**
