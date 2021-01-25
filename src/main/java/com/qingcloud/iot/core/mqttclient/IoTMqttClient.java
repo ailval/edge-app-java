@@ -13,20 +13,28 @@ public class IoTMqttClient {
 
     private Timer timer;
     private TimerTask timerTask;
+    private IMqttToken token;
+
+    private IMessageCallback messageCallback;
+    private IEventCallback eventCallback;
+    private OnConnectStatusCB onConnectStatusCallback;
+    private IOnConnectedCallback onConnectedCallback;
+    private IOnDisconnectedCallback onDisconnectedCallback;
+
+    private String[] topics;
+
+    private static final int DEFAULT_KEEP_ALIVE_DEFAULT = 60;
+    private static final int DEFAULT_WAIT_TIMEOUT = 30;
+    private static final int DEFAULT_TIMES_DELAY = 1000;
+    private static final int DEFAULT_TIMES_PERIOD = 10000;
 
     public IMqttToken getToken() {
         return token;
     }
 
-    private IMqttToken token;
-
     public void setToken(IMqttToken token) {
         this.token = token;
     }
-
-    private IMessageCallback messageCallback;
-    private IEventCallback eventCallback;
-    private OnConnectStatusCB onConnectStatusCallback;
 
     public IOnConnectedCallback getOnConnectedCallback() {
         return onConnectedCallback;
@@ -43,16 +51,6 @@ public class IoTMqttClient {
     public void setOnDisconnectedCallback(IOnDisconnectedCallback onDisconnectedCallback) {
         this.onDisconnectedCallback = onDisconnectedCallback;
     }
-
-    private IOnConnectedCallback onConnectedCallback;
-    private IOnDisconnectedCallback onDisconnectedCallback;
-
-    private String[] topics;
-
-    private static final int DEFAULT_KEEP_ALIVE_DEFAULT = 60;
-    private static final int DEFAULT_WAIT_TIMEOUT = 30;
-    private static final int DEFAULT_TIMES_DELAY = 1000;
-    private static final int DEFAULT_TIMES_PERIOD = 10000;
 
     public String[] getTopics() {
         return topics;
@@ -199,6 +197,7 @@ public class IoTMqttClient {
             @Override
             public void run() {
                 if (token instanceof IMqttToken && mqttClient.isConnected()) {
+                    //调试用，显示Mqttclient是否连接
                     System.out.println("tryConnect token:" + token + ", isConnected:" + mqttClient.isConnected());
 
                     return;
@@ -208,6 +207,7 @@ public class IoTMqttClient {
                     } catch (MqttException e) {
                         e.printStackTrace();
                     }
+                    //调试用，显示Mqttclient是否重新连接
                     System.out.println("tryConnect new token:" + token + ", isConnected:" + mqttClient.isConnected());
                 }
             }
@@ -227,49 +227,5 @@ public class IoTMqttClient {
         }
 
         this.doDisconnect();
-    }
-
-    protected void onConnect(MqttClient mqttClient,Boolean reconnect,String uri) throws MqttException {
-        this.mqttClient = mqttClient;
-        System.out.println("onConnect topics:" + topics);
-
-        if (onConnectStatusCallback == null) {
-            return;
-        } else {
-            onConnectStatusCallback.onConnectStatusCB(reconnect, uri);
-        }
-    }
-
-    protected void onReConnect(MqttClient mqttClient,Boolean reconnect,String uri) throws MqttException {
-        this.mqttClient = mqttClient;
-        if (onConnectStatusCallback == null) {
-            return;
-        } else {
-            onConnectStatusCallback.onConnectStatusCB(true, uri);
-        }
-    }
-
-    protected void onDisconnect(MqttClient mqttClient, Throwable cause) throws MqttException {
-        this.mqttClient = mqttClient;
-
-        try {
-            this.setToken(mqttClient.connectWithResult(this.getMqttConnectOptions()));
-        } catch (MqttException e) {
-            e.printStackTrace();
-        }
-
-        if (onConnectStatusCallback == null) {
-            return;
-        } else {
-            onConnectStatusCallback.onConnectStatusCB(false, cause.getLocalizedMessage());
-        }
-    }
-
-    protected void onMessageArrived(String topic,MqttMessage message) {
-        if (messageCallback == null) {
-            return;
-        } else {
-            messageCallback.messageCallback(topic, message.getPayload());
-        }
     }
 }

@@ -2,7 +2,6 @@ package com.qingcloud.iot.core.mqttclient;
 
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
-import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 public class IoTMqttCallback implements MqttCallbackExtended {
@@ -18,8 +17,6 @@ public class IoTMqttCallback implements MqttCallbackExtended {
 
     @Override
     public void connectComplete(boolean reconnect,String serverURI) {
-        System.out.println("IoTMqttCallback connectComplete:" + reconnect + ", serverURI:" + serverURI);
-
         if (ioTMqttClient.getOnConnectedCallback() != null) {
             ioTMqttClient.getOnConnectedCallback().onConnectedCallback(reconnect,serverURI);
         }
@@ -28,7 +25,6 @@ public class IoTMqttCallback implements MqttCallbackExtended {
     @Override
     public void connectionLost(Throwable cause) {
         cause.printStackTrace();
-        System.out.println("IoTMqttCallback connectionLost:" + cause.getLocalizedMessage());
 
         if (ioTMqttClient.getOnDisconnectedCallback() != null) {
             ioTMqttClient.getOnDisconnectedCallback().onDisconnectedCallback(true, cause);
@@ -37,7 +33,6 @@ public class IoTMqttCallback implements MqttCallbackExtended {
 
     @Override
     public void messageArrived(String topic,MqttMessage message) {
-        System.out.println("IoTMqttCallback messageArrived:" + topic + ", message:" + new String(message.getPayload()));
 
         if (ioTMqttClient.getMessageCallback() != null) {
             ioTMqttClient.getMessageCallback().messageCallback(topic, message.getPayload());
@@ -46,10 +41,6 @@ public class IoTMqttCallback implements MqttCallbackExtended {
 
     @Override
     public void deliveryComplete(IMqttDeliveryToken token) {
-        try {
-            System.out.println("IoTMqttCallback deliveryComplete:" + new String(token.getMessage().getPayload()));
-        } catch (MqttException e) {
-            e.printStackTrace();
-        }
+        //需确认消息推送成功时，可设置此方法的回调函数
     }
 }
