@@ -10,11 +10,11 @@ public class AppSdkMsgProperty {
         this.identifier = identifier;
     }
 
-    public Integer getTimestamp() {
+    public Long getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(Integer timestamp) {
+    public void setTimestamp(Long timestamp) {
         this.timestamp = timestamp;
     }
 
@@ -27,6 +27,6 @@ public class AppSdkMsgProperty {
     }
 
     public String identifier;
-    public Integer timestamp;
+    public Long timestamp;
     public Object value;
 }

@@ -1,3 +1,7 @@
 *.class
 /target/
 .idea
+iotd-*
+/src/main/java/local/test/*
+/src/main/resources/
+/src/main/conf/
