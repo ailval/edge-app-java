@@ -1,10 +1,10 @@
 package com.qingcloud.iot.core.mqttclient;
 
-import com.qingcloud.iot.core.IEventCallback;
-import com.qingcloud.iot.core.IMessageCallback;
-import com.qingcloud.iot.core.IOnConnectedCallback;
-import com.qingcloud.iot.core.OnConnectStatusCB;
+import com.qingcloud.iot.core.*;
+
 import org.eclipse.paho.client.mqttv3.*;
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
+
 import java.util.*;
 
 public class IoTMqttClient {
@@ -19,9 +19,33 @@ public class IoTMqttClient {
     }
 
     private IMqttToken token;
+
+    public void setToken(IMqttToken token) {
+        this.token = token;
+    }
+
     private IMessageCallback messageCallback;
     private IEventCallback eventCallback;
-    private OnConnectStatusCB connectStatusCB;
+    private OnConnectStatusCB onConnectStatusCallback;
+
+    public IOnConnectedCallback getOnConnectedCallback() {
+        return onConnectedCallback;
+    }
+
+    public void setOnConnectedCallback(IOnConnectedCallback onConnectedCallback) {
+        this.onConnectedCallback = onConnectedCallback;
+    }
+
+    public IOnDisconnectedCallback getOnDisconnectedCallback() {
+        return onDisconnectedCallback;
+    }
+
+    public void setOnDisconnectedCallback(IOnDisconnectedCallback onDisconnectedCallback) {
+        this.onDisconnectedCallback = onDisconnectedCallback;
+    }
+
+    private IOnConnectedCallback onConnectedCallback;
+    private IOnDisconnectedCallback onDisconnectedCallback;
 
     private String[] topics;
 
@@ -29,7 +53,6 @@ public class IoTMqttClient {
     private static final int DEFAULT_WAIT_TIMEOUT = 30;
     private static final int DEFAULT_TIMES_DELAY = 1000;
     private static final int DEFAULT_TIMES_PERIOD = 10000;
-
 
     public String[] getTopics() {
         return topics;
@@ -64,11 +87,11 @@ public class IoTMqttClient {
     }
 
     public OnConnectStatusCB getConnectStatusCB() {
-        return connectStatusCB;
+        return onConnectStatusCallback;
     }
 
     public void setConnectStatusCB(OnConnectStatusCB connectStatusCB) {
-        this.connectStatusCB = connectStatusCB;
+        this.onConnectStatusCallback = connectStatusCB;
     }
 
     public IMessageCallback getMessageCallback() {
@@ -80,10 +103,10 @@ public class IoTMqttClient {
     }
 
     public IoTMqttClient(String clientId,String url,OnConnectStatusCB connectStatusCB,IMessageCallback messageCallback,IEventCallback eventCallback) throws MqttException {
-        this.connectStatusCB = connectStatusCB;
+        this.onConnectStatusCallback = connectStatusCB;
         this.messageCallback = messageCallback;
         this.eventCallback = eventCallback;
-        this.mqttClient = new MqttClient(url, clientId);
+        this.mqttClient = new MqttClient(url, clientId, new MemoryPersistence());
         MqttConnectOptions mqttConnectOptions = new MqttConnectOptions();
         mqttConnectOptions.setServerURIs(new String[]{url});
         mqttConnectOptions.setCleanSession(false);
@@ -91,69 +114,6 @@ public class IoTMqttClient {
         mqttConnectOptions.setKeepAliveInterval(DEFAULT_KEEP_ALIVE_DEFAULT);
         mqttConnectOptions.setConnectionTimeout(DEFAULT_WAIT_TIMEOUT);
         this.mqttConnectOptions = mqttConnectOptions;
-        this.setClientCallback(this);
-    }
-
-    private void setClientCallback(IoTMqttClient client) {
-        if (client != null && (client instanceof IoTMqttClient)) {
-            client.mqttClient.setCallback(new MqttCallbackExtended() {
-                @Override
-                public void connectComplete(boolean reconnect,String serverURI) {
-                    System.out.println("IoTMqttClient connectComplete reconnect:" + reconnect + ", serverURI:" + serverURI);
-
-                    //重新订阅主题，如果 cleanSession 设置为 false ,则可以不用重新订阅
-//                    if (!reconnect){
-//                        try {
-//                            mqttClient.subscribe(client.topics);
-//                        } catch (MqttException e) {
-//                            e.printStackTrace();
-//                        }
-//                    }
-
-//                    if (reconnect) {
-//                        try {
-//                            String[] topics = client.getTopics();
-//                            System.out.println("IoTMqttClient connectComplete topics:" + topics);
-//                            int[] qos = new int[topics.length];
-//                            for (int i=0;i<topics.length;++i) {
-//                                qos[i] = 0;
-//                            }
-//                            client.getMqttClient().subscribe(getTopics(),qos);
-//                        } catch (MqttException e) {
-//                            e.printStackTrace();
-//                        }
-//                    }
-                }
-
-                @Override
-                public void connectionLost(Throwable cause) {
-                    System.out.println("IoTMqttClient connectionLost cause:" + cause.toString());
-                    while(true) {
-                        try {
-                            Thread.sleep(1000);
-                            if(null != client && !client.mqttClient.isConnected()) {
-                                // 重新连接
-                                client.mqttClient.connectWithResult(getMqttConnectOptions());
-                            }
-                            break;
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            continue;
-                        }
-                    }
-                }
-
-                @Override
-                public void messageArrived(String topic,MqttMessage message) throws Exception {
-                    System.out.println("IoTMqttClient messageArrived topic:" + topic + ", message:" + message.getPayload().toString());
-                }
-
-                @Override
-                public void deliveryComplete(IMqttDeliveryToken token) {
-                    System.out.println("IoTMqttClient deliveryComplete token:" + token);
-                }
-            });
-        }
     }
 
     public IoTMqttClient(String clientId, String url, OnConnectStatusCB connectStatusCB) throws MqttException {
@@ -185,23 +145,19 @@ public class IoTMqttClient {
     }
 
     public void subscribeMultiple(String[] topics, IMessageCallback messageCallback) throws MqttException {
+        this.setMessageCallback(messageCallback);
         ArrayList<IMqttMessageListener> arrayList = new ArrayList<>();
 
         for (int i=0; i<topics.length; i++) {
             if (topics[i] != null && !topics[i].equals("")) {
-                arrayList.add(new IMqttMessageListener() {
-                    @Override
-                    public void messageArrived(String topic,MqttMessage message) throws Exception {
-                        messageCallback.messageCallback(topic, message.getPayload());
-                    }
-                });
+                String topic = topics[i];
+                try {
+                    this.subscribe(topic,0,messageCallback);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
-
-        int size = arrayList.size();
-        IMqttMessageListener[] messageListeners = arrayList.toArray(new IMqttMessageListener[size]);
-
-        this.mqttClient.subscribe(topics, messageListeners);
     }
 
     public void unsubscribe(String[] topics) throws MqttException {
@@ -249,20 +205,22 @@ public class IoTMqttClient {
             public void run() {
                 if (token instanceof IMqttToken && mqttClient.isConnected()) {
                     System.out.println("tryConnect token:" + token + ", isConnected:" + mqttClient.isConnected());
+
                     return;
                 } else {
                     try {
                         token = mqttClient.connectWithResult(mqttConnectOptions);
-                        System.out.println("tryConnect new token:" + token + ", isConnected:" + mqttClient.isConnected());
                     } catch (MqttException e) {
                         e.printStackTrace();
                     }
+                    System.out.println("tryConnect new token:" + token + ", isConnected:" + mqttClient.isConnected());
                 }
             }
         };
 
         timerTask = task;
-        timer.schedule(timerTask, DEFAULT_TIMES_DELAY);
+//        timer.schedule(timerTask, DEFAULT_TIMES_DELAY);
+        timer.schedule(timerTask, DEFAULT_TIMES_DELAY, DEFAULT_TIMES_PERIOD);
     }
 
     private void cancelConnect() throws MqttException {
@@ -276,20 +234,47 @@ public class IoTMqttClient {
         this.doDisconnect();
     }
 
-    private void onConnect(MqttClient mqttClient) {
-        if (connectStatusCB == null) {
+    protected void onConnect(MqttClient mqttClient,Boolean reconnect,String uri) throws MqttException {
+        this.mqttClient = mqttClient;
+        System.out.println("onConnect topics:" + topics);
+
+        if (onConnectStatusCallback == null) {
             return;
         } else {
-            connectStatusCB.onConnectStatusCB(true, null);
+            onConnectStatusCallback.onConnectStatusCB(reconnect, uri);
         }
     }
 
-    private void onDisconnect(MqttClient mqttClient, Throwable cause) {
-        if (connectStatusCB == null) {
+    protected void onReConnect(MqttClient mqttClient,Boolean reconnect,String uri) throws MqttException {
+        this.mqttClient = mqttClient;
+        if (onConnectStatusCallback == null) {
             return;
         } else {
-            connectStatusCB.onConnectStatusCB(false, cause.getLocalizedMessage());
+            onConnectStatusCallback.onConnectStatusCB(true, uri);
         }
     }
 
+    protected void onDisconnect(MqttClient mqttClient, Throwable cause) throws MqttException {
+        this.mqttClient = mqttClient;
+
+        try {
+            this.setToken(mqttClient.connectWithResult(this.getMqttConnectOptions()));
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
+
+        if (onConnectStatusCallback == null) {
+            return;
+        } else {
+            onConnectStatusCallback.onConnectStatusCB(false, cause.getLocalizedMessage());
+        }
+    }
+
+    protected void onMessageArrived(String topic,MqttMessage message) {
+        if (messageCallback == null) {
+            return;
+        } else {
+            messageCallback.messageCallback(topic, message.getPayload());
+        }
+    }
 }

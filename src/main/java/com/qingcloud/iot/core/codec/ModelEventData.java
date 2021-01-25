@@ -7,13 +7,13 @@ public class ModelEventData {
 
     public String message;
     public String level;
-    public Integer time;
+    public Long time;
     public HashMap<String, Object> value;
 
     public ModelEventData() {
         message = "";
         level = "";
-        time = Integer.valueOf(0);
+        time = Long.valueOf(0);
         value = new HashMap<String,Object>();
     }
 
@@ -33,11 +33,11 @@ public class ModelEventData {
         this.level = level;
     }
 
-    public Integer getTime() {
+    public Long getTime() {
         return time;
     }
 
-    public void setTime(Integer time) {
+    public void setTime(Long time) {
         this.time = time;
     }
 
@@ -49,7 +49,7 @@ public class ModelEventData {
         this.value = value;
     }
 
-    public ModelEventData(String message, String level, Integer time, HashMap<String, Object> value) {
+    public ModelEventData(String message, String level, Long time, HashMap<String, Object> value) {
         this.message = message;
         this.level = level;
         this.time = time;

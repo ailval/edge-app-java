@@ -4,23 +4,23 @@ import java.util.Objects;
 
 public class ModelPropertyData {
 
-    public Integer time;
+    public Long time;
     public Object value;
 
-    public ModelPropertyData(Integer time, Object value) {
+    public ModelPropertyData(Long time, Object value) {
         this.time = time;
         this.value = value;
     }
 
     public ModelPropertyData() {
-        this(Integer.valueOf(0), new Object());
+        this(Long.valueOf(0), new Object());
     }
 
-    public Integer getTime() {
+    public Long getTime() {
         return time;
     }
 
-    public void setTime(Integer time) {
+    public void setTime(Long time) {
         this.time = time;
     }
 
