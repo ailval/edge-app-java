@@ -50,15 +50,15 @@ public class TestMessageClient {
             }
         };
 
-        OnConnectStatusCB onConnectStatusCB = new OnConnectStatusCB() {
-            @Override
-            public void onConnectStatusCB(boolean bool,String details) {
-                System.out.println("TestMessageClient OnConnectStatusCB:" + bool + "," + details);
-            }
-        };
+//        OnConnectStatusCB onConnectStatusCB = new OnConnectStatusCB() {
+//            @Override
+//            public void onConnectStatusCB(boolean bool,String details) {
+//                System.out.println("TestMessageClient OnConnectStatusCB:" + bool + "," + details);
+//            }
+//        };
 
         IoTMqttClient ioTMqttClient = new IoTMqttClient(appId,host);
-        ioTMqttClient.setConnectStatusCB(onConnectStatusCB);
+//        ioTMqttClient.setConnectStatusCB(onConnectStatusCB);
         ioTMqttClient.setMessageCallback(messageCallback);
         ioTMqttClient.setEventCallback(eventCallback);
 

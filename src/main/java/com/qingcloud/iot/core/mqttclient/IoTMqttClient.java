@@ -17,7 +17,6 @@ public class IoTMqttClient {
 
     private IMessageCallback messageCallback;
     private IEventCallback eventCallback;
-    private OnConnectStatusCB onConnectStatusCallback;
     private IOnConnectedCallback onConnectedCallback;
     private IOnDisconnectedCallback onDisconnectedCallback;
 
@@ -84,14 +83,6 @@ public class IoTMqttClient {
         this.mqttConnectOptions = mqttConnectOptions;
     }
 
-    public OnConnectStatusCB getConnectStatusCB() {
-        return onConnectStatusCallback;
-    }
-
-    public void setConnectStatusCB(OnConnectStatusCB connectStatusCB) {
-        this.onConnectStatusCallback = connectStatusCB;
-    }
-
     public IMessageCallback getMessageCallback() {
         return messageCallback;
     }
@@ -101,7 +92,6 @@ public class IoTMqttClient {
     }
 
     public IoTMqttClient(String clientId,String url,OnConnectStatusCB connectStatusCB,IMessageCallback messageCallback,IEventCallback eventCallback) throws MqttException {
-        this.onConnectStatusCallback = connectStatusCB;
         this.messageCallback = messageCallback;
         this.eventCallback = eventCallback;
         this.mqttClient = new MqttClient(url, clientId, new MemoryPersistence());
@@ -166,7 +156,6 @@ public class IoTMqttClient {
 
     public void doConnect() throws MqttException {
         if (this.mqttClient.isConnected()) {
-            return;
         } else {
             if (mqttConnectOptions == null) {
                 tryConnect();
@@ -179,8 +168,6 @@ public class IoTMqttClient {
     public void doDisconnect() throws MqttException {
         if (this.mqttClient.isConnected()) {
             this.mqttClient.disconnect();
-        } else {
-            return;
         }
     }
 

@@ -342,7 +342,7 @@ public class Codec {
         mdmpPropertyMsg.mdmpMsgHeader.metadata = new ModelMetadata();
         mdmpPropertyMsg.mdmpMsgHeader.metadata.modelId = thingId;
         mdmpPropertyMsg.mdmpMsgHeader.metadata.entityId = deviceId;
-        mdmpPropertyMsg.mdmpMsgHeader.metadata.source = new ArrayList<>();
+        mdmpPropertyMsg.mdmpMsgHeader.metadata.sourceId = new ArrayList<>();
         mdmpPropertyMsg.mdmpMsgHeader.metadata.epochTime = Long.valueOf(now).toString();
 
         mdmpPropertyMsg.setParams(new HashMap<>());
@@ -378,7 +378,7 @@ public class Codec {
         mdmpEventMsg.mdmpMsgHeader.setType(template.getMessageTemplateEvent());
         mdmpEventMsg.mdmpMsgHeader.metadata.modelId = thingId;
         mdmpEventMsg.mdmpMsgHeader.metadata.entityId = deviceId;
-        mdmpEventMsg.mdmpMsgHeader.metadata.source = new ArrayList<>();
+        mdmpEventMsg.mdmpMsgHeader.metadata.sourceId = new ArrayList<>();
         mdmpEventMsg.mdmpMsgHeader.metadata.epochTime = Long.valueOf(now).toString();
 
         ModelEventData modelEventData = new ModelEventData();

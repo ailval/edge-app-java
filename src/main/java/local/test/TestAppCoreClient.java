@@ -9,17 +9,21 @@ import com.qingcloud.iot.core.topic.Topic;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 public class TestAppCoreClient {
 
     public static void main(String[] args) throws Exception {
-        TestAppCoreClient appCoreClient = new TestAppCoreClient();
-        appCoreClient.testPubProperties();
 
+        //订阅
+//        TestAppCoreClient appCoreClient = new TestAppCoreClient();
+//        appCoreClient.testPubProperties();
+
+        //推送消息
+//        testPublishProperty();
+
+        //事件decode
+        testPublishEvent();
     }
 
     private void testPubProperties() throws Exception {
@@ -68,7 +72,7 @@ public class TestAppCoreClient {
         ioTMqttClient.setMessageCallback(new IMessageCallback() {
             @Override
             public void messageCallback(String topic,byte[] payload) {
-                System.out.println("testPubProperties messageCallback topic:" + topic + ", payload:" + new String(payload));
+                System.out.println("testPubProperties messageCallback topic1:" + topic + ", payload:" + new String(payload));
             }
         });
 
@@ -93,6 +97,13 @@ public class TestAppCoreClient {
                 System.out.println("testPubProperties onDisconnectedCallback:" + bool + ", cause:" + cause.getLocalizedMessage());
             }
         });
+
+//        ioTMqttClient.setConnectStatusCB(new OnConnectStatusCB() {
+//            @Override
+//            public void onConnectStatusCB(boolean bool,String details) {
+//                System.out.println("testPubProperties onConnectStatusCB:" + bool + ", details:" + details);
+//            }
+//        });
 
         ioTMqttClient.publish(topics[0],0,"Hello Mqtt".getBytes());
     }
@@ -144,7 +155,7 @@ public class TestAppCoreClient {
         System.out.println("app getCodec:" + app.getCodec());
         System.out.println("app getMessageParam:" + app.getMessageParam());
         System.out.println("app getEventParam:" + app.getEventParam());
-        System.out.println("app getServiceIds:" + app.getServiceIds());
+        System.out.println("app getServiceIds:" + Arrays.toString(app.getServiceIds()));
         System.out.println("app getIoTMqttClient:" + app.getIoTMqttClient());
         System.out.println("app getOnConnectedCallback:" + app.getConnectStatusCB());
         System.out.println("app getCfg getAppId:" + app.getCfg().getAppId());
@@ -156,11 +167,13 @@ public class TestAppCoreClient {
         System.out.println("app getCodec getAppId:" + app.getCodec().getAppId());
         System.out.println("app getCodec getDeviceId:" + app.getCodec().getDeviceId());
         System.out.println("app getCodec getThingId:" + app.getCodec().getThingId());
+        System.out.println("app getCodec getIdentifier:" + app.getCodec().getThingId());
 
         //对应的设备ID，模型ID和APP ID
         //ioTMqttClient
         //sourceId,entityId,deviceId=iotd-xxxxx
         //modelId,thingId=iott-xxxxx
+        //identifier=thingId
 
         //消息回调
         IMessageCallback messageCallback = new IMessageCallback() {
@@ -229,20 +242,83 @@ public class TestAppCoreClient {
         ioTMqttClient.publish(topic.getSubscribeEventTopic(), 0, "hello evt".getBytes());
 
         //设置边缘应用消息的数据
+        List list = getListData();
+
+        //内部暂时借助fastjson进行序列化
+        String jsonStr = JSON.toJSONString(list);
+        List<AppSdkMsgProperty> list1 = JSON.parseArray(jsonStr, AppSdkMsgProperty.class);
+        for ( AppSdkMsgProperty msgProperty:list1) {
+            System.out.println("identifier:" + msgProperty.getIdentifier());
+        }
+
         AppSdkMessageData msgData = new AppSdkMessageData();
         msgData.setType(CommonConst.AppSdkMessageType.MessageType_Property);
+        msgData.setPayload(jsonStr.getBytes());
+        System.out.println("jsonStr:" + jsonStr);
 
+        List listData2 = getListData2();
+        String jsonStr2 = JSON.toJSONString(listData2);
+        AppSdkMessageData msgData2 = new AppSdkMessageData();
+        msgData2.setType(CommonConst.AppSdkMessageType.MessageType_Property);
+        msgData2.setPayload(jsonStr2.getBytes());
+
+        System.out.println("jsonStr2:" + jsonStr2);
+        //发送消息，注意数据格式
+        app.sendMessage(msgData);
+
+        int size = topics.length;
+        System.out.println("testPubProperties topics size:" + size);
+        for (int i1=0;i1<size;++i1) {
+            System.out.println("testPubProperties topics:" + topics[i1]);
+        }
+
+        ioTMqttClient.getMqttClient().setCallback(new IoTMqttCallback(ioTMqttClient));
+
+        ioTMqttClient.setMessageCallback(new IMessageCallback() {
+            @Override
+            public void messageCallback(String topic,byte[] payload) {
+                System.out.println("testPubProperties messageCallback topic2:" + topic + ", payload:" + new String(payload));
+            }
+        });
+
+        ioTMqttClient.subscribeMultiple(topics,ioTMqttClient.getMessageCallback());
+
+        IoTMqttClient finalIoTMqttClient1 = ioTMqttClient;
+        ioTMqttClient.setOnConnectedCallback(new IOnConnectedCallback() {
+            @Override
+            public void onConnectedCallback(Boolean bool,String uri) {
+                System.out.println("testPubProperties onConnectedCallback:" + bool + ", URI:" + uri);
+
+                try {
+                    finalIoTMqttClient1.subscribeMultiple(topics,finalIoTMqttClient1.getMessageCallback());
+
+                } catch (MqttException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        ioTMqttClient.setOnDisconnectedCallback(new IOnDisconnectedCallback() {
+            @Override
+            public void onDisconnectedCallback(Boolean bool,Throwable cause) {
+                System.out.println("testPubProperties onDisconnectedCallback:" + bool + ", cause:" + cause.getLocalizedMessage());
+            }
+        });
+
+    }
+
+    private static List<AppSdkMsgProperty> getListData() {
         AppSdkMsgProperty msgProperty1 = new AppSdkMsgProperty();
         msgProperty1.identifier = "order_no"; //对应物模型的字段标识符
-        msgProperty1.timestamp = Long.valueOf(1111);
+        msgProperty1.timestamp = new Date().getTime()/1000000;
         msgProperty1.value = "11111";
         AppSdkMsgProperty msgProperty2 = new AppSdkMsgProperty();
         msgProperty2.identifier = "resource_no";
-        msgProperty2.timestamp = Long.valueOf(22222);
+        msgProperty2.timestamp = new Date().getTime()/1000000;
         msgProperty2.value = "22222";
         AppSdkMsgProperty msgProperty3 = new AppSdkMsgProperty();
         msgProperty3.identifier = "resource_info";
-        msgProperty3.timestamp = Long.valueOf(333);
+        msgProperty3.timestamp = new Date().getTime()/1000000;
         msgProperty3.value = "3";
 
         List<AppSdkMsgProperty> list = new ArrayList<AppSdkMsgProperty>();
@@ -250,20 +326,29 @@ public class TestAppCoreClient {
         list.add(msgProperty2);
         list.add(msgProperty3);
 
-        //内部暂时借助fastjson进行序列化
-        String jsonStr = JSON.toJSONString(list);
+        return list;
+    }
 
-        List<AppSdkMsgProperty> list1 = JSON.parseArray(jsonStr, AppSdkMsgProperty.class);
+    private static List<AppSdkMsgProperty> getListData2() {
+        AppSdkMsgProperty msgProperty1 = new AppSdkMsgProperty();
+        msgProperty1.identifier = "order_no"; //对应物模型的字段标识符
+        msgProperty1.timestamp = Long.valueOf(1711570);
+        msgProperty1.value = "11111";
+        AppSdkMsgProperty msgProperty2 = new AppSdkMsgProperty();
+        msgProperty2.identifier = "resource_no";
+        msgProperty2.timestamp = Long.valueOf(1711570);
+        msgProperty2.value = "22222";
+        AppSdkMsgProperty msgProperty3 = new AppSdkMsgProperty();
+        msgProperty3.identifier = "resource_info";
+        msgProperty3.timestamp = Long.valueOf(1711570);
+        msgProperty3.value = "3";
 
-        for ( AppSdkMsgProperty msgProperty:list1) {
-            System.out.println("identifier:" + msgProperty.getIdentifier());
-        }
+        List<AppSdkMsgProperty> list = new ArrayList<AppSdkMsgProperty>();
+        list.add(msgProperty1);
+        list.add(msgProperty2);
+        list.add(msgProperty3);
 
-        System.out.println("jsonStr:" + jsonStr);
-        msgData.setPayload(jsonStr.getBytes());
-
-        //发送边缘消息
-        app.sendMessage(msgData);
+        return list;
     }
 
     /**
@@ -274,11 +359,39 @@ public class TestAppCoreClient {
         Object msgObj = new Object();
         Object evtObj = new Object();
 
-        AppCoreClient app = new AppCoreClient(CommonConst.AppSdkRuntimeType.RuntimeType_Exec, null,msgObj,null
+        AppCoreClient app = new AppCoreClient(CommonConst.AppSdkRuntimeType.RuntimeType_Docker, null,msgObj,null
                 ,evtObj);
 
         //docker
         app.setAppType(CommonConst.AppSdkRuntimeType.RuntimeType_Docker);
+
+        //app初始化，启动
+        app.init();
+        app.start();
+
+        //获取调试用信息
+        System.out.println("app getAppType:" + app.getAppType());
+        System.out.println("app getUrl:" + app.getUrl());
+        System.out.println("app getCfg:" + app.getCfg());
+        System.out.println("app getCodec:" + app.getCodec());
+        System.out.println("app getMessageParam:" + app.getMessageParam());
+        System.out.println("app getEventParam:" + app.getEventParam());
+        System.out.println("app getServiceIds:" + app.getServiceIds());
+        System.out.println("app getIoTMqttClient:" + app.getIoTMqttClient());
+        System.out.println("app getOnConnectedCallback:" + app.getConnectStatusCB());
+        System.out.println("app getCfg getAppId:" + app.getCfg().getAppId());
+        System.out.println("app getCfg getDeviceId:" + app.getCfg().getDeviceId());
+        System.out.println("app getHubAddr:" + app.getCfg().getHubAddr());
+        System.out.println("app getCfg getHubPort:" + app.getCfg().getHubPort());
+        System.out.println("app getCfg getProtocol:" + app.getCfg().getProtocol());
+        System.out.println("app getCfg getThingId:" + app.getCfg().getThingId());
+        System.out.println("app getCodec getAppId:" + app.getCodec().getAppId());
+        System.out.println("app getCodec getDeviceId:" + app.getCodec().getDeviceId());
+        System.out.println("app getCodec getThingId:" + app.getCodec().getThingId());
+        System.out.println("app getCodec getIdentifier:" + app.getCodec().getThingId());
+
+        IoTMqttClient ioTMqttClient = app.getIoTMqttClient();
+        ioTMqttClient.getMqttClient().setCallback(new IoTMqttCallback(ioTMqttClient));
 
         IMessageCallback messageCallback = new IMessageCallback() {
             public void messageCallback(String topic,byte[] payload) {
@@ -305,7 +418,8 @@ public class TestAppCoreClient {
         app.init();
         app.start();
 
-        IoTMqttClient ioTMqttClient = app.getIoTMqttClient();
+        ioTMqttClient = app.getIoTMqttClient();
+        ioTMqttClient.getMqttClient().setCallback(new IoTMqttCallback(ioTMqttClient));
 
         String appId = app.getCfg().getAppId();
         String deviceId = app.getCodec().getDeviceId();
@@ -333,12 +447,42 @@ public class TestAppCoreClient {
             System.out.println("topics:" + topics[i]);
         }
 
-        ioTMqttClient.subscribeMultiple(topics, messageCallback);
+        ioTMqttClient.getMqttClient().setCallback(new IoTMqttCallback(ioTMqttClient));
+
+        ioTMqttClient.setMessageCallback(new IMessageCallback() {
+            @Override
+            public void messageCallback(String topic,byte[] payload) {
+                System.out.println("testPubProperties messageCallback topic2:" + topic + ", payload:" + new String(payload));
+                app.onRecvData(topic,payload);
+            }
+        });
+
+        ioTMqttClient.subscribeMultiple(topics,ioTMqttClient.getMessageCallback());
+
+        IoTMqttClient finalIoTMqttClient1 = ioTMqttClient;
+        ioTMqttClient.setOnConnectedCallback(new IOnConnectedCallback() {
+            @Override
+            public void onConnectedCallback(Boolean bool,String uri) {
+                System.out.println("testPubProperties onConnectedCallback:" + bool + ", URI:" + uri);
+
+                try {
+                    finalIoTMqttClient1.subscribeMultiple(topics,finalIoTMqttClient1.getMessageCallback());
+
+                } catch (MqttException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        ioTMqttClient.setOnDisconnectedCallback(new IOnDisconnectedCallback() {
+            @Override
+            public void onDisconnectedCallback(Boolean bool,Throwable cause) {
+                System.out.println("testPubProperties onDisconnectedCallback:" + bool + ", cause:" + cause.getLocalizedMessage());
+            }
+        });
 
         ioTMqttClient.publish(topic.getPublishPropertyTopic(),0,"hello".getBytes());
-        ioTMqttClient.publish(topic.getSubscribePropertyTopic(), 0, "hello".getBytes());
-
-//        ioTMqttClient.setClientCallback(ioTMqttClient);
+        ioTMqttClient.publish(topic.getPublishEventTopic(),0,"hello".getBytes());
 
         AppSdkMessageData msgData = new AppSdkMessageData();
         msgData.setType(CommonConst.AppSdkMessageType.MessageType_Event);
@@ -352,13 +496,19 @@ public class TestAppCoreClient {
         hashMap.put("k1", "v1");
         hashMap.put("k2", "v2");
         msgEvent.setParams(hashMap);
+        System.out.println("msgEvent:" + msgEvent.getIdentifier() + "," + msgEvent.getTimestamp().toString());
 
         String jsonStr = JSON.toJSONString(msgEvent);
         AppSdkMsgEvent msgEvent1 = JSON.parseObject(jsonStr, AppSdkMsgEvent.class);
 
         System.out.println("jsonStr:" + jsonStr);
+        System.out.println("msgEvent1:" + msgEvent1.getIdentifier() + "," + msgEvent1.getTimestamp().toString());
         msgData.setPayload(jsonStr.getBytes());
 
         app.sendMessage(msgData);
+
+        //注意数据格式
+        ioTMqttClient.publish(topic.getSubscribeEventTopic(), 0, JSON.toJSONString(msgData).getBytes()); //error
+        ioTMqttClient.publish(topic.getSubscribePropertyTopic(), 0, JSON.toJSONString(msgData).getBytes()); //error
     }
 }
