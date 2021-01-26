@@ -90,7 +90,6 @@ public class AppCoreClient implements ICore, OnConnectStatusCB {
             e.printStackTrace();
         }
         this.codec = new Codec(cfg.appId, cfg.deviceId, cfg.thingId);
-
         this.appId = this.codec.getAppId();
         this.deviceId = this.codec.getDeviceId();
 
