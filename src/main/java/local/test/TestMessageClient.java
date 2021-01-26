@@ -50,15 +50,7 @@ public class TestMessageClient {
             }
         };
 
-//        OnConnectStatusCB onConnectStatusCB = new OnConnectStatusCB() {
-//            @Override
-//            public void onConnectStatusCB(boolean bool,String details) {
-//                System.out.println("TestMessageClient OnConnectStatusCB:" + bool + "," + details);
-//            }
-//        };
-
         IoTMqttClient ioTMqttClient = new IoTMqttClient(appId,host);
-//        ioTMqttClient.setConnectStatusCB(onConnectStatusCB);
         ioTMqttClient.setMessageCallback(messageCallback);
         ioTMqttClient.setEventCallback(eventCallback);
 
@@ -78,17 +70,9 @@ public class TestMessageClient {
         topic.equipPublishEventTopic(appId,identifier);
         topic.equipSubscribeEventTopic(appId,identifier);
 
-        topic.equipPublishServiceReplyTopic(modelId,deviceId,identifier);
-        topic.equipSubscribeServiceReplyTopic(modelId,deviceId,identifier);
-
         topic.equipPublishServiceTopic(appId,identifier);
-        topic.equipSubscribeServiceTopic(appId,identifier);
 
-//        System.out.println(topic.getSubscribePropertyTopic());
-//        System.out.println(topic.getSubscribeEventTopic());
-//        System.out.println(topic.getSubscribeServiceTopic());
-
-        String[] topics = {topic.getSubscribePropertyTopic(),topic.getSubscribeEventTopic(),topic.getSubscribeServiceTopic()};
+        String[] topics = {topic.getSubscribePropertyTopic(),topic.getSubscribeEventTopic(),topic.getPublishServiceTopic()};
         System.out.println("topics:" + topics.toString());
 
         ioTMqttClient.subscribeMultiple(topics,messageCallback);

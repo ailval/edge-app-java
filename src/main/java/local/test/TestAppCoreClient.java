@@ -16,14 +16,14 @@ public class TestAppCoreClient {
     public static void main(String[] args) throws Exception {
 
         //订阅
-//        TestAppCoreClient appCoreClient = new TestAppCoreClient();
-//        appCoreClient.testPubProperties();
+        TestAppCoreClient appCoreClient = new TestAppCoreClient();
+        appCoreClient.testPubProperties();
 
         //推送消息
 //        testPublishProperty();
 
         //事件decode
-        testPublishEvent();
+//        testPublishEvent();
     }
 
     private void testPubProperties() throws Exception {
@@ -35,15 +35,14 @@ public class TestAppCoreClient {
         String[] topics;
 
         //构造启动方式
-        AppCoreClient appCoreClient = new AppCoreClient(CommonConst.AppSdkRuntimeType.RuntimeType_Docker);
-        app = appCoreClient;
+        app = new AppCoreClient(CommonConst.AppSdkRuntimeType.RuntimeType_Docker);
 
         //app初始化，启动
         app.init();
         app.start();
 
         appId = app.getCfg().getAppId();
-        identifier = app.getCodec().getThingId();
+        identifier = app.getCodec().getThingId(); //仅仅是测试，实际为模型的字段identifier
 
         //初始化完成后，可获取MQTT客户端的APP ID
         ioTMqttClient = app.getIoTMqttClient();
@@ -59,14 +58,13 @@ public class TestAppCoreClient {
         topic.equipSubscribeEventTopic(appId,identifier);
 
         topic.equipPublishServiceTopic(appId,identifier);
-        topic.equipSubscribeServiceTopic(appId,identifier);
 
         topics = new String[]{topic.getSubscribePropertyTopic(),topic.getSubscribeEventTopic(),topic.getSubscribeServiceTopic()};
 
         int size = topics.length;
         System.out.println("testPubProperties topics size:" + size);
-        for (int i=0;i<size;++i) {
-            System.out.println("testPubProperties topics:" + topics[i]);
+        for (String s : topics) {
+            System.out.println("testPubProperties topics:" + s);
         }
 
         ioTMqttClient.setMessageCallback(new IMessageCallback() {
@@ -98,13 +96,6 @@ public class TestAppCoreClient {
             }
         });
 
-//        ioTMqttClient.setConnectStatusCB(new OnConnectStatusCB() {
-//            @Override
-//            public void onConnectStatusCB(boolean bool,String details) {
-//                System.out.println("testPubProperties onConnectStatusCB:" + bool + ", details:" + details);
-//            }
-//        });
-
         ioTMqttClient.publish(topics[0],0,"Hello Mqtt".getBytes());
     }
 
@@ -119,7 +110,6 @@ public class TestAppCoreClient {
         topic.equipSubscribeEventTopic(appId,identifier);
 
         topic.equipPublishServiceTopic(appId,identifier);
-        topic.equipSubscribeServiceTopic(appId,identifier);
 
         //多个topic，便于统一订阅
         String[] topics = {topic.getSubscribePropertyTopic(),topic.getSubscribeEventTopic(),topic.getSubscribeServiceTopic()};
@@ -173,7 +163,6 @@ public class TestAppCoreClient {
         //ioTMqttClient
         //sourceId,entityId,deviceId=iotd-xxxxx
         //modelId,thingId=iott-xxxxx
-        //identifier=thingId
 
         //消息回调
         IMessageCallback messageCallback = new IMessageCallback() {
@@ -192,7 +181,7 @@ public class TestAppCoreClient {
         app.getIoTMqttClient().setEventCallback(eventCallback);
 
         String appId = app.getCfg().getAppId();
-        String identifier = app.getCodec().getThingId();
+        String identifier = app.getCodec().getThingId(); //仅仅是测试，实际为模型的字段identifier
 
         Topic topic = new Topic();
         //设置topic
@@ -203,7 +192,6 @@ public class TestAppCoreClient {
         topic.equipSubscribeEventTopic(appId,identifier);
 
         topic.equipPublishServiceTopic(appId,identifier);
-        topic.equipSubscribeServiceTopic(appId,identifier);
 
         //初始化完成后，可获取MQTT客户端的APP ID
         IoTMqttClient ioTMqttClient = app.getIoTMqttClient();
@@ -268,8 +256,8 @@ public class TestAppCoreClient {
 
         int size = topics.length;
         System.out.println("testPubProperties topics size:" + size);
-        for (int i1=0;i1<size;++i1) {
-            System.out.println("testPubProperties topics:" + topics[i1]);
+        for (String s : topics) {
+            System.out.println("testPubProperties topics:" + s);
         }
 
         ioTMqttClient.getMqttClient().setCallback(new IoTMqttCallback(ioTMqttClient));
@@ -310,15 +298,15 @@ public class TestAppCoreClient {
     private static List<AppSdkMsgProperty> getListData() {
         AppSdkMsgProperty msgProperty1 = new AppSdkMsgProperty();
         msgProperty1.identifier = "order_no"; //对应物模型的字段标识符
-        msgProperty1.timestamp = new Date().getTime()/1000000;
+        msgProperty1.timestamp = new Date().getTime();
         msgProperty1.value = "11111";
         AppSdkMsgProperty msgProperty2 = new AppSdkMsgProperty();
         msgProperty2.identifier = "resource_no";
-        msgProperty2.timestamp = new Date().getTime()/1000000;
+        msgProperty2.timestamp = new Date().getTime();
         msgProperty2.value = "22222";
         AppSdkMsgProperty msgProperty3 = new AppSdkMsgProperty();
         msgProperty3.identifier = "resource_info";
-        msgProperty3.timestamp = new Date().getTime()/1000000;
+        msgProperty3.timestamp = new Date().getTime();
         msgProperty3.value = "3";
 
         List<AppSdkMsgProperty> list = new ArrayList<AppSdkMsgProperty>();
@@ -332,15 +320,15 @@ public class TestAppCoreClient {
     private static List<AppSdkMsgProperty> getListData2() {
         AppSdkMsgProperty msgProperty1 = new AppSdkMsgProperty();
         msgProperty1.identifier = "order_no"; //对应物模型的字段标识符
-        msgProperty1.timestamp = Long.valueOf(1711570);
+        msgProperty1.timestamp = 1711570L;
         msgProperty1.value = "11111";
         AppSdkMsgProperty msgProperty2 = new AppSdkMsgProperty();
         msgProperty2.identifier = "resource_no";
-        msgProperty2.timestamp = Long.valueOf(1711570);
+        msgProperty2.timestamp = 1711570L;
         msgProperty2.value = "22222";
         AppSdkMsgProperty msgProperty3 = new AppSdkMsgProperty();
         msgProperty3.identifier = "resource_info";
-        msgProperty3.timestamp = Long.valueOf(1711570);
+        msgProperty3.timestamp = 1711570L;
         msgProperty3.value = "3";
 
         List<AppSdkMsgProperty> list = new ArrayList<AppSdkMsgProperty>();
@@ -414,17 +402,13 @@ public class TestAppCoreClient {
             }
         });
 
-        //app run
-        app.init();
-        app.start();
-
         ioTMqttClient = app.getIoTMqttClient();
         ioTMqttClient.getMqttClient().setCallback(new IoTMqttCallback(ioTMqttClient));
 
         String appId = app.getCfg().getAppId();
         String deviceId = app.getCodec().getDeviceId();
         String thingId = app.getCfg().getThingId();
-        String identifier = app.getCodec().getThingId();
+        String identifier = app.getCodec().getThingId(); //仅仅是测试，实际为模型的字段identifier
 
         Topic topic = new Topic();
         ArrayList<MqttMessage> arrayList = new ArrayList<MqttMessage>();
@@ -433,12 +417,13 @@ public class TestAppCoreClient {
         topic.equipSubscribePropertyTopic(appId);
 
         topic.equipPublishEventTopic(appId,identifier);
-        topic.equipSubscribeEventTopic(appId,identifier);
+//        topic.equipSubscribeEventTopic(appId,identifier);
+        //edge/68352965-2fab-11eb-a5e9-52549e81d51b/thing/event/subOffline/control
+        topic.equipSubscribeEventTopic(appId,"subOffline");
 
-        topic.equipPublishServiceTopic(appId,identifier);
-        topic.equipSubscribeServiceTopic(appId,identifier);
+        topic.equipPublishServiceTopic(appId,identifier); //仅仅是测试，实际为模型的字段identifier
 
-        String[] topics = {topic.getSubscribePropertyTopic(),topic.getSubscribeEventTopic(),topic.getSubscribeServiceTopic()};
+        String[] topics = {topic.getSubscribePropertyTopic(),topic.getSubscribeEventTopic(),topic.getPublishServiceTopic()};
 
         ioTMqttClient.setTopics(topics);
 

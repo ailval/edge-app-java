@@ -9,10 +9,10 @@ public class ModelMetadata {
     public ArrayList<String> sourceId;
     public String epochTime;
 
-    public ModelMetadata(String modelId, String entityId, ArrayList<String> source, String epochTime) {
+    public ModelMetadata(String modelId,String entityId,ArrayList<String> sourceId,String epochTime) {
         this.modelId = modelId;
         this.entityId = entityId;
-        this.sourceId = source;
+        this.sourceId = sourceId;
         this.epochTime = epochTime;
     }
 
@@ -36,12 +36,12 @@ public class ModelMetadata {
         this.entityId = entityId;
     }
 
-    public ArrayList<String> getSource() {
+    public ArrayList<String> getSourceId() {
         return sourceId;
     }
 
-    public void setSource(ArrayList source) {
-        this.sourceId = source;
+    public void setSourceId(ArrayList sourceId) {
+        this.sourceId = sourceId;
     }
 
     public String getEpochTime() {

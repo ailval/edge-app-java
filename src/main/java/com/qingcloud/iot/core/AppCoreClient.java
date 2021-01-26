@@ -93,7 +93,7 @@ public class AppCoreClient implements ICore, OnConnectStatusCB {
 
         //
         this.appId = this.codec.getAppId();
-        this.identifier = this.codec.getThingId();
+//        this.identifier = this.codec.getThingId();
         this.deviceId = this.codec.getDeviceId();
 
         StringBuilder stringBuilder = new StringBuilder();
