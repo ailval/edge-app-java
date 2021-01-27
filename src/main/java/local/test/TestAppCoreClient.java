@@ -16,14 +16,14 @@ public class TestAppCoreClient {
     public static void main(String[] args) throws Exception {
 
         //订阅
-        TestAppCoreClient appCoreClient = new TestAppCoreClient();
-        appCoreClient.testPubProperties();
+//        TestAppCoreClient appCoreClient = new TestAppCoreClient();
+//        appCoreClient.testPubProperties();
 
         //推送消息
 //        testPublishProperty();
 
         //事件decode
-//        testPublishEvent();
+        testPublishEvent();
     }
 
     private void testPubProperties() throws Exception {
@@ -47,6 +47,7 @@ public class TestAppCoreClient {
         //初始化完成后，可获取MQTT客户端的APP ID
         ioTMqttClient = app.getIoTMqttClient();
         ioTMqttClient.getMqttClient().setCallback(new IoTMqttCallback(ioTMqttClient));
+//        app.setCoreCallback(new AppCoreCallback(app));
 
         //多个topic，便于统一订阅
         topic = new Topic();
@@ -347,8 +348,14 @@ public class TestAppCoreClient {
         Object msgObj = new Object();
         Object evtObj = new Object();
 
-        AppCoreClient app = new AppCoreClient(CommonConst.AppSdkRuntimeType.RuntimeType_Docker, null,msgObj,null
-                ,evtObj);
+//        AppCoreClient app = new AppCoreClient(CommonConst.AppSdkRuntimeType.RuntimeType_Docker, null,msgObj,null
+//                ,evtObj);
+
+        AppCoreClient app = new AppCoreClient(CommonConst.AppSdkRuntimeType.RuntimeType_Docker,
+                null,
+                msgObj,
+                null,
+                evtObj);
 
         //docker
         app.setAppType(CommonConst.AppSdkRuntimeType.RuntimeType_Docker);
@@ -381,6 +388,13 @@ public class TestAppCoreClient {
         IoTMqttClient ioTMqttClient = app.getIoTMqttClient();
         ioTMqttClient.getMqttClient().setCallback(new IoTMqttCallback(ioTMqttClient));
 
+        app.setOnRecvData(new OnRecvData() {
+            @Override
+            public void onRecvData(String topic,byte[] payload) {
+                System.out.println("---------------- onRecvData:" + topic + new String(payload));
+            }
+        });
+
         IMessageCallback messageCallback = new IMessageCallback() {
             public void messageCallback(String topic,byte[] payload) {
                 System.out.println("testPublishEvent messageCallback topic:" + topic + ", payload:" + new String(payload));
@@ -404,6 +418,7 @@ public class TestAppCoreClient {
 
         ioTMqttClient = app.getIoTMqttClient();
         ioTMqttClient.getMqttClient().setCallback(new IoTMqttCallback(ioTMqttClient));
+        app.setCoreCallback(new AppCoreCallback(app));
 
         String appId = app.getCfg().getAppId();
         String deviceId = app.getCodec().getDeviceId();
@@ -437,8 +452,8 @@ public class TestAppCoreClient {
         ioTMqttClient.setMessageCallback(new IMessageCallback() {
             @Override
             public void messageCallback(String topic,byte[] payload) {
-                System.out.println("testPubProperties messageCallback topic2:" + topic + ", payload:" + new String(payload));
-                app.onRecvData(topic,payload);
+                System.out.println("testPublishEvent messageCallback topic2:" + topic + ", payload:" + new String(payload));
+//                app.onRecvData(topic,payload);
             }
         });
 
@@ -448,7 +463,7 @@ public class TestAppCoreClient {
         ioTMqttClient.setOnConnectedCallback(new IOnConnectedCallback() {
             @Override
             public void onConnectedCallback(Boolean bool,String uri) {
-                System.out.println("testPubProperties onConnectedCallback:" + bool + ", URI:" + uri);
+                System.out.println("testPublishEvent onConnectedCallback:" + bool + ", URI:" + uri);
 
                 try {
                     finalIoTMqttClient1.subscribeMultiple(topics,finalIoTMqttClient1.getMessageCallback());
@@ -462,7 +477,7 @@ public class TestAppCoreClient {
         ioTMqttClient.setOnDisconnectedCallback(new IOnDisconnectedCallback() {
             @Override
             public void onDisconnectedCallback(Boolean bool,Throwable cause) {
-                System.out.println("testPubProperties onDisconnectedCallback:" + bool + ", cause:" + cause.getLocalizedMessage());
+                System.out.println("testPublishEvent onDisconnectedCallback:" + bool + ", cause:" + cause.getLocalizedMessage());
             }
         });
 
@@ -491,9 +506,35 @@ public class TestAppCoreClient {
         msgData.setPayload(jsonStr.getBytes());
 
         app.sendMessage(msgData);
+        app.onRecvData("/edge/68352965-2fab-11eb-a5e9-52549e81d51b/thing/service/iott-8p1EKZQLab/call",msgData.payload);
 
         //注意数据格式
         ioTMqttClient.publish(topic.getSubscribeEventTopic(), 0, JSON.toJSONString(msgData).getBytes()); //error
         ioTMqttClient.publish(topic.getSubscribePropertyTopic(), 0, JSON.toJSONString(msgData).getBytes()); //error
+
+
+        AppCoreClient app1 = new AppCoreClient(CommonConst.AppSdkRuntimeType.RuntimeType_Docker);
+        app.setCoreCallback(new AppCoreCallback(app));
+
+        app.setEventCB(new AppSdkEventCB() {
+            @Override
+            public void appSdkEventCB(AppSdkEventData eventData,Object object) {
+                System.out.println("appSdkEventCB------------------");
+            }
+        });
+
+        app.setMessageCB(new AppSdkMessageCB() {
+            @Override
+            public void appSdkMessageCB(AppSdkMessageData messageData,Object object) {
+                System.out.println("appSdkMessageCB------------------");
+            }
+        });
+
+        app.setConnectStatusCB(new OnConnectStatusCB() {
+            @Override
+            public void onConnectStatusCB(boolean isConnected,String details) {
+                System.out.println("onConnectStatusCB------------------");
+            }
+        });
     }
 }

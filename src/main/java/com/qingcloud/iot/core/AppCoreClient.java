@@ -13,14 +13,44 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 
 import java.util.ArrayList;
 
-public class AppCoreClient implements ICore, OnConnectStatusCB {
+public class AppCoreClient implements ICore, OnConnectStatusCB, OnRecvData {
+
+    public AppCoreCallback getCoreCallback() {
+        return coreCallback;
+    }
+
+    public void setCoreCallback(AppCoreCallback coreCallback) {
+        this.coreCallback = coreCallback;
+    }
+
+    private AppCoreCallback coreCallback;
+
+    public OnRecvData getOnRecvData() {
+        return onRecvData;
+    }
+
+    public void setOnRecvData(OnRecvData onRecvData) {
+        this.onRecvData = onRecvData;
+    }
+
+    private OnRecvData onRecvData;
 
     private AppSdkRuntimeType appType;
     private Object messageParam;
+
+    public void setMessageCB(AppSdkMessageCB messageCB) {
+        this.messageCB = messageCB;
+    }
+
+    public void setEventCB(AppSdkEventCB eventCB) {
+        this.eventCB = eventCB;
+    }
+
     private AppSdkMessageCB messageCB;
     private AppSdkEventCB eventCB;
 
-    private OnConnectStatusCB connectStatusCallback;
+    private OnConnectStatusCB connectStatusCB;
+
     private Object eventParam;
     private IoTMqttClient ioTMqttClient;
     private Codec codec;
@@ -34,6 +64,14 @@ public class AppCoreClient implements ICore, OnConnectStatusCB {
     protected String appId;
     protected String identifier;
     protected String deviceId;
+
+    protected AppSdkMessageCB getMessageCB() {
+        return messageCB;
+    }
+
+    protected AppSdkEventCB getEventCB() {
+        return eventCB;
+    }
 
     public IoTMqttClient getIoTMqttClient() {
         return ioTMqttClient;
@@ -56,11 +94,11 @@ public class AppCoreClient implements ICore, OnConnectStatusCB {
     }
 
     public OnConnectStatusCB getConnectStatusCB() {
-        return connectStatusCallback;
+        return connectStatusCB;
     }
 
     public void setConnectStatusCB(OnConnectStatusCB connectStatusCB) {
-        this.connectStatusCallback = connectStatusCB;
+        this.connectStatusCB = connectStatusCB;
     }
 
     public AppCoreClient(AppSdkRuntimeType type,AppSdkMessageCB messageCB,Object messageParam,AppSdkEventCB eventCB,Object eventParam) {
@@ -83,6 +121,8 @@ public class AppCoreClient implements ICore, OnConnectStatusCB {
 
     @Override
     public void init() {
+        this.setCoreCallback(new AppCoreCallback(this));
+
         this.cfg = new EdgeConfig();
         try {
             this.cfg.load(appType);
@@ -109,6 +149,7 @@ public class AppCoreClient implements ICore, OnConnectStatusCB {
 
         try {
             this.ioTMqttClient = new IoTMqttClient(clientId,url,this::onConnectStatusCB);
+            this.ioTMqttClient.setAppCoreClient(this);
         } catch (MqttException e) {
             this.codec = null;
             this.cfg = null;
@@ -206,24 +247,6 @@ public class AppCoreClient implements ICore, OnConnectStatusCB {
             }
 
             ioTMqttClient.getMqttClient().setCallback(new IoTMqttCallback(ioTMqttClient));
-            if (ioTMqttClient.getMessageCallback() != null) {
-                try {
-                    ioTMqttClient.subscribeMultiple(topics,ioTMqttClient.getMessageCallback());
-                } catch (MqttException e) {
-                    e.printStackTrace();
-                }
-            } else {
-                try {
-                    ioTMqttClient.subscribeMultiple(topics,new IMessageCallback() {
-                        @Override
-                        public void messageCallback(String topic,byte[] payload) {
-                            System.out.println("onConnectStatusCB messageCallback:" + topic + ", payload:" + new String(payload));
-                        }
-                    });
-                } catch (MqttException e) {
-                    e.printStackTrace();
-                }
-            }
 
         } else {
             System.out.println("APP SDK onConnectStatus called, status:" + false + details);
@@ -283,6 +306,7 @@ public class AppCoreClient implements ICore, OnConnectStatusCB {
         return null;
     }
 
+    @Override
     public void onRecvData(String topic, byte[] payload) {
         if (this.ioTMqttClient == null || this.codec == null || this.cfg == null) {
             System.out.println("APP SDK onRecvData failed, err: not init");
@@ -290,6 +314,8 @@ public class AppCoreClient implements ICore, OnConnectStatusCB {
         }
 
         AppSdkMessage appSdkMessage = codec.decodeMessage(topic, payload);
+        appSdkMessage.topic = topic;
+
         if (appSdkMessage == null || appSdkMessage.error != null) {
             System.out.println("APP SDK onRecvData failed, err: not init" + appSdkMessage.error);
             return;
@@ -308,7 +334,7 @@ public class AppCoreClient implements ICore, OnConnectStatusCB {
             case TopicType_PublishEvent:
                 messageType = AppSdkMessageType.MessageType_Event;
                 break;
-            case TopicType_SubscribeService:
+            case TopicType_PublishService:
                 messageType = AppSdkMessageType.MessageType_ServiceCall;
                 break;
             default:

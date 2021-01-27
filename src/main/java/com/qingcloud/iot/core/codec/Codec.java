@@ -124,6 +124,7 @@ public class Codec {
 
     public AppSdkMessage decodeMessage(String topic, byte[] payload) {
         AppSdkMessage appSdkMessage = decodeTopic(topic);
+
         if (appSdkMessage == null || appSdkMessage.error != null) return null;
 
         TopicType topicType = appSdkMessage.topicType;
@@ -137,6 +138,9 @@ public class Codec {
                 if (appSdkMessage == null || appSdkMessage.error != null) return null;
 
                 appSdkMessage.topicType = topicType;
+                appSdkMessage.topicTypeString = topicTypeStr;
+                appSdkMessage.identifier = identifier;
+                appSdkMessage.setOriginalTopic(topic);
                 return appSdkMessage;
 
             case TopicType_SubscribeEvent:
@@ -145,6 +149,9 @@ public class Codec {
                 if (appSdkMessage == null || appSdkMessage.error != null) return null;
 
                 appSdkMessage.topicType = topicType;
+                appSdkMessage.topicTypeString = topicTypeStr;
+                appSdkMessage.identifier = identifier;
+                appSdkMessage.setOriginalTopic(topic);
                 return appSdkMessage;
 
             case TopicType_PublishService:
@@ -152,6 +159,9 @@ public class Codec {
                 if (appSdkMessage == null || appSdkMessage.error != null) return null;
 
                 appSdkMessage.topicType = topicType;
+                appSdkMessage.topicTypeString = topicTypeStr;
+                appSdkMessage.identifier = identifier;
+                appSdkMessage.setOriginalTopic(topic);
                 return appSdkMessage;
 
             case TopicType_SubscribeService:
@@ -161,6 +171,7 @@ public class Codec {
                 appSdkMessage.topicTypeString = "";
                 appSdkMessage.payload = null;
                 appSdkMessage.error = new Error("Unsupported topic type: " + topicType + "topicTypeString:" + topicTypeStr);
+                appSdkMessage.setOriginalTopic(topic);
                 return appSdkMessage;
         }
     }
@@ -248,10 +259,13 @@ public class Codec {
     //return message: topicType, topicTypeString, appId, identifier, error
     public AppSdkMessage decodeTopic(String topic) {
         AppSdkMessage appSdkMessage = new AppSdkMessage();
+        appSdkMessage.setOriginalTopic(topic);
+        appSdkMessage.topic = topic;
 
         if (topic == null || topic.equals("")) {
             appSdkMessage.error = new Error("invalid arguments");
             appSdkMessage.topicType = TopicType.TopicType_Unknown;
+            appSdkMessage.topic = "";
             return appSdkMessage;
         }
 
@@ -261,12 +275,14 @@ public class Codec {
         if (size != 7) {
             appSdkMessage.error = new Error("invalid topic format");
             appSdkMessage.topicType = TopicType.TopicType_Unknown;
+            appSdkMessage.topic = "";
             return appSdkMessage;
         } else if (!units[0].equals("") ||
                 !units[1].equals("edge") ||
                 !units[3].equals("thing")) {
             appSdkMessage.error = new Error("invalid topic format:" + topic);
             appSdkMessage.topicType = TopicType.TopicType_Unknown;
+            appSdkMessage.topic = "";
             return appSdkMessage;
         }
 
@@ -303,6 +319,7 @@ public class Codec {
         if (appSdkMessage.topicType == TopicType.TopicType_Unknown) {
             appSdkMessage.error = new Error("invalid topic format:" + topic);
             appSdkMessage.topicType = TopicType.TopicType_Unknown;
+            appSdkMessage.topic = "";
             return appSdkMessage;
         }
 
@@ -311,6 +328,7 @@ public class Codec {
                 || appSdkMessage.topicType == TopicType.TopicType_PublishService)
             && appSdkMessage.identifier.equals("")) {
             appSdkMessage.error = new Error("invalid identifier format:" + topic);
+            appSdkMessage.topic = "";
             return appSdkMessage;
         }
 
@@ -371,7 +389,7 @@ public class Codec {
         long now = new Date().getTime()/1000000;
         MdmpEventMsg mdmpEventMsg = new MdmpEventMsg();
         mdmpEventMsg.mdmpMsgHeader = new MdmpMsgHeader();
-        mdmpEventMsg.mdmpMsgHeader.setId(UUID.randomUUID().toString().replace("-",""));
+        mdmpEventMsg.mdmpMsgHeader.setId(UUID.randomUUID().toString());
         mdmpEventMsg.mdmpMsgHeader.setVersion(DefaultMessageVersion);
 
         MessageTemplate template = new MessageTemplate(appSdkMsgEvent.identifier);
@@ -464,6 +482,7 @@ public class Codec {
 
         AppSdkMessage appSdkMessage = new AppSdkMessage();
         appSdkMessage.payload = json.getBytes();
+        appSdkMessage.identifier = identifier;
 
         return appSdkMessage;
     }
@@ -481,6 +500,7 @@ public class Codec {
 
         AppSdkMessage appSdkMessage = new AppSdkMessage();
         appSdkMessage.payload = json.getBytes();
+        appSdkMessage.identifier = identifier;
 
         return appSdkMessage;
     }

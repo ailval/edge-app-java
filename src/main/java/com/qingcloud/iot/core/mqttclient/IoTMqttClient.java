@@ -8,6 +8,16 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import java.util.*;
 
 public class IoTMqttClient {
+
+    public AppCoreClient getAppCoreClient() {
+        return appCoreClient;
+    }
+
+    public void setAppCoreClient(AppCoreClient appCoreClient) {
+        this.appCoreClient = appCoreClient;
+    }
+
+    private AppCoreClient appCoreClient;
     private MqttClient mqttClient;
     private MqttConnectOptions mqttConnectOptions;
 

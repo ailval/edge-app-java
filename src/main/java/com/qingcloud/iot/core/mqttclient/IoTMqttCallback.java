@@ -20,6 +20,10 @@ public class IoTMqttCallback implements MqttCallbackExtended {
         if (ioTMqttClient.getOnConnectedCallback() != null) {
             ioTMqttClient.getOnConnectedCallback().onConnectedCallback(reconnect,serverURI);
         }
+
+        if (ioTMqttClient.getAppCoreClient().getConnectStatusCB() != null) {
+            ioTMqttClient.getAppCoreClient().getConnectStatusCB().onConnectStatusCB(reconnect, serverURI);
+        }
     }
 
     @Override
@@ -33,10 +37,14 @@ public class IoTMqttCallback implements MqttCallbackExtended {
 
     @Override
     public void messageArrived(String topic,MqttMessage message) {
-
         if (ioTMqttClient.getMessageCallback() != null) {
             ioTMqttClient.getMessageCallback().messageCallback(topic, message.getPayload());
         }
+
+        if (ioTMqttClient.getAppCoreClient().getOnRecvData() != null) {
+            ioTMqttClient.getAppCoreClient().getOnRecvData().onRecvData(topic,message.getPayload());
+        }
+
     }
 
     @Override
