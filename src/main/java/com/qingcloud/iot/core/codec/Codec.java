@@ -340,8 +340,6 @@ public class Codec {
 
     public AppSdkMessage encodePropertyMsg(byte[] payload) {
         String payloadStr = new String(payload);
-        System.out.println("payload:" + payloadStr);
-
         List<AppSdkMsgProperty> arrayList = JSON.parseArray(payloadStr, AppSdkMsgProperty.class);
 
         if (arrayList.size() == 0) {
@@ -378,7 +376,6 @@ public class Codec {
     }
 
     public AppSdkMessage encodeEventMsg(byte[] payload) {
-        System.out.println("payload:" + new String(payload));
 
         AppSdkMsgEvent appSdkMsgEvent = JSONObject.parseObject(new String(payload), AppSdkMsgEvent.class);
 

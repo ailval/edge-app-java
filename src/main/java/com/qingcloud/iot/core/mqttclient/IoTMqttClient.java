@@ -26,7 +26,6 @@ public class IoTMqttClient {
     private IMqttToken token;
 
     private IMessageCallback messageCallback;
-    private IEventCallback eventCallback;
     private IOnConnectedCallback onConnectedCallback;
     private IOnDisconnectedCallback onDisconnectedCallback;
 
@@ -69,14 +68,6 @@ public class IoTMqttClient {
         this.topics = topics;
     }
 
-    public IEventCallback getEventCallback() {
-        return eventCallback;
-    }
-
-    public void setEventCallback(IEventCallback eventCallback) {
-        this.eventCallback = eventCallback;
-    }
-
     public MqttClient getMqttClient() {
         return mqttClient;
     }
@@ -103,7 +94,6 @@ public class IoTMqttClient {
 
     public IoTMqttClient(String clientId,String url,OnConnectStatusCB connectStatusCB,IMessageCallback messageCallback,IEventCallback eventCallback) throws MqttException {
         this.messageCallback = messageCallback;
-        this.eventCallback = eventCallback;
         this.mqttClient = new MqttClient(url, clientId, new MemoryPersistence());
         MqttConnectOptions mqttConnectOptions = new MqttConnectOptions();
         mqttConnectOptions.setServerURIs(new String[]{url});
@@ -134,18 +124,32 @@ public class IoTMqttClient {
         if ((topic == null || qos < 0 || qos > 2))
             throw new Exception("invalid arguments");
 
-        this.setMessageCallback(messageCallback);
+        if (this.messageCallback == null ) {
+            if (messageCallback != null) {
+                this.messageCallback = messageCallback;
+            }
+        }
+
         this.mqttClient.subscribe(topic,qos);
     }
 
     public void subscribeMultiple(String[] topics, IMessageCallback messageCallback) throws MqttException {
-        this.setMessageCallback(messageCallback);
+        if (this.messageCallback == null ) {
+            if (messageCallback != null) {
+                this.messageCallback = messageCallback;
+            }
+        }
 
         for (int i=0; i<topics.length; i++) {
             if (topics[i] != null && !topics[i].equals("")) {
                 String topic = topics[i];
                 try {
                     this.subscribe(topic,0,messageCallback);
+                    if (this.messageCallback == null ) {
+                        if (messageCallback != null) {
+                            this.messageCallback = messageCallback;
+                        }
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -195,7 +199,7 @@ public class IoTMqttClient {
             public void run() {
                 if (token instanceof IMqttToken && mqttClient.isConnected()) {
                     //调试用，显示Mqttclient是否连接
-                    System.out.println("tryConnect token:" + token + ", isConnected:" + mqttClient.isConnected());
+//                    System.out.println("Connecting ... token:" + token + ", isConnected:" + mqttClient.isConnected());
 
                     return;
                 } else {
@@ -205,7 +209,7 @@ public class IoTMqttClient {
                         e.printStackTrace();
                     }
                     //调试用，显示Mqttclient是否重新连接
-                    System.out.println("tryConnect new token:" + token + ", isConnected:" + mqttClient.isConnected());
+//                    System.out.println("Reconnecting ... token:" + token + ", isConnected:" + mqttClient.isConnected());
                 }
             }
         };

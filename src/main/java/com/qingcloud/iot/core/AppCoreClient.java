@@ -300,8 +300,6 @@ public class AppCoreClient implements ICore, OnConnectStatusCB, OnRecvData {
         publishTopic = appSdkMessage.topic;
         publishData = appSdkMessage.payload;
 
-        System.out.println("sendMessage publishTopic:" + publishTopic);
-        System.out.println("sendMessage publishData:" + new String(publishData));
         ioTMqttClient.publish(publishTopic, 0, publishData);
         return null;
     }

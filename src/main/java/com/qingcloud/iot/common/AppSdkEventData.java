@@ -12,12 +12,12 @@ public class AppSdkEventData {
         this.payload = payload;
     }
 
-    public AppSdkEventData() {
-        this(null, null);
-    }
-
     public AppSdkEventData(AppSdkEventType type) {
         this(type, null);
+    }
+
+    public AppSdkEventData() {
+        this(null, null);
     }
 
     public AppSdkEventType getType() {
