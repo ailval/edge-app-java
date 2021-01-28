@@ -23,7 +23,7 @@ public class TestApp {
     static MqttConnectOptions mqttConnectOptions;
 
     static final int DEFAULT_TIMES_DELAY = 1000;
-    static final int DEFAULT_TIMES_PERIOD = 30000; //30秒为循环周期
+    static final int DEFAULT_TIMES_PERIOD = 5000; //循环周期
 
     public static void main(String[] args) throws Exception {
         testApp = new TestApp();
@@ -154,7 +154,64 @@ public class TestApp {
         }
 
         //推送数据
-        postData();
+        this.postData();
+
+        //停止
+        TimerTask stopTimerTask = new TimerTask() {
+            @Override
+            public void run() {
+                System.out.println("stopTimerTask appCli:" + appCli.getIoTMqttClient().getMqttClient());
+                try {
+                    appCli.stop();
+                } catch (MqttException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        timer.schedule(stopTimerTask, DEFAULT_TIMES_PERIOD * 5);
+
+
+        //启动
+        TimerTask startTimerTask = new TimerTask() {
+            @Override
+            public void run() {
+                System.out.println("startTimerTask appCli:" + appCli.getIoTMqttClient().getMqttClient());
+                try {
+                    appCli.start();
+                } catch (MqttException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        timer.schedule(startTimerTask, DEFAULT_TIMES_PERIOD * 6);
+
+        //试图重复启动（如果已经启动，则不会触发）
+        TimerTask restartTimerTask = new TimerTask() {
+            @Override
+            public void run() {
+                System.out.println("restartTimerTask appCli:" + appCli.getIoTMqttClient().getMqttClient());
+                try {
+                    appCli.start();
+                } catch (MqttException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        timer.schedule(restartTimerTask, DEFAULT_TIMES_PERIOD * 7);
+
+        //清除
+        TimerTask cleanupTimerTask = new TimerTask() {
+            @Override
+            public void run() {
+                System.out.println("cleanupTimerTask appCli:" + appCli.getIoTMqttClient().getMqttClient());
+                try {
+                    appCli.cleanup();
+                } catch (MqttException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        timer.schedule(cleanupTimerTask, DEFAULT_TIMES_PERIOD * 10);
     }
 
     void postData() {
