@@ -77,16 +77,16 @@ public class Topic {
             equipSubscribeEventTopic(appId, identifier);
 
             equipPublishServiceTopic(appId, identifier);
-            equipSubscribeServiceTopic(appId, identifier);
+//            equipSubscribeServiceTopic(appId, identifier);
         }
 
-        if (modelId != null && !modelId.equals("") &&
-                entityId != null && !entityId.equals("") &&
-                identifier != null && !identifier.equals("")) {
+//        if (modelId != null && !modelId.equals("") &&
+//                entityId != null && !entityId.equals("") &&
+//                identifier != null && !identifier.equals("")) {
 
-            equipPublishServiceReplyTopic(modelId, entityId, identifier);
-            equipSubscribeServiceReplyTopic(modelId, entityId, identifier);
-        }
+//            equipPublishServiceReplyTopic(modelId, entityId, identifier);
+//            equipSubscribeServiceReplyTopic(modelId, entityId, identifier);
+//        }
     }
 
     public String getPublishPropertyTopic() {
@@ -182,17 +182,18 @@ public class Topic {
         this.publishServiceTopic = str;
     }
 
-    public void equipSubscribeServiceTopic(String appId, String identifier) {
-        String str = new StringBuilder().append("/sys/").append(appId).append("/thing/service/").append(identifier).append("/call_sub").toString();
-        this.subscribeServiceTopic = str;
-    }
-    public void equipPublishServiceReplyTopic(String modelId, String entityId, String identifier) {
-        String str = new StringBuilder().append("/sys/").append(modelId).append("/").append(entityId).append("/thing/service/").append(identifier).append("/call_reply").toString();
-        this.publishServiceReplyTopic = str;
-    }
+//    public void equipSubscribeServiceTopic(String appId, String identifier) {
+//        String str = new StringBuilder().append("/edge/").append(appId).append("/thing/service/").append(identifier).append("/call").toString();
+//        this.subscribeServiceTopic = str;
+//    }
 
-    public void equipSubscribeServiceReplyTopic(String modelId, String entityId, String identifier) {
-        String str = new StringBuilder().append("/sys/").append(modelId).append("/").append(entityId).append("/thing/service/").append(identifier).append("/call_reply_sub").toString();
-        this.subscribeServiceReplyTopic = str;
-    }
+//    public void equipPublishServiceReplyTopic(String modelId, String entityId, String identifier) {
+//        String str = new StringBuilder().append("/edge/").append(modelId).append("/").append(entityId).append("/thing/service/").append(identifier).append("/call_reply").toString();
+//        this.publishServiceReplyTopic = str;
+//    }
+
+//    public void equipSubscribeServiceReplyTopic(String modelId, String entityId, String identifier) {
+//        String str = new StringBuilder().append("/edge/").append(modelId).append("/").append(entityId).append("/thing/service/").append(identifier).append("/call_reply").toString();
+//        this.subscribeServiceReplyTopic = str;
+//    }
 }

@@ -4,6 +4,15 @@ import com.qingcloud.iot.common.TopicTypeConvert;
 
 public class AppSdkMessage {
 
+    public String getOriginalTopic() {
+        return originalTopic;
+    }
+
+    public void setOriginalTopic(String originalTopic) {
+        this.originalTopic = originalTopic;
+    }
+
+    protected String originalTopic;
     public String topic;
     public TopicTypeConvert.TopicType topicType;
     public String topicTypeString; //应该从TopicTypeConvert方法获取
