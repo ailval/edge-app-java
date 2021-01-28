@@ -1,27 +1,4 @@
 # IoT AppSdk 接口和测试概要（草稿）
-package local.test;
-
-import com.alibaba.fastjson.JSON;
-
-import com.qingcloud.iot.common.*;
-import com.qingcloud.iot.common.CommonConst.*;
-import com.qingcloud.iot.core.*;
-import com.qingcloud.iot.core.mqttclient.IoTMqttCallback;
-import com.qingcloud.iot.core.mqttclient.IoTMqttClient;
-import com.qingcloud.iot.core.topic.Topic;
-import org.eclipse.paho.client.mqttv3.*;
-
-import java.util.*;
-
-public class TestApp {
-    static TestApp testApp;
-    static AppCoreClient appCli;
-    static Timer timer;
-    static TimerTask timerTask;
-    static IMqttToken token;
-    static MqttClient mqttClient;
-    static IoTMqttClient ioTMqttClient;
-    static MqttConnectOptions mqttConnectOptions;
 
     static final int DEFAULT_TIMES_DELAY = 1000;
     static final int DEFAULT_TIMES_PERIOD = 30000; //30秒为循环周期
@@ -248,8 +225,6 @@ public class TestApp {
         messageData.setPayload(JSON.toJSONString(msgServiceCall).getBytes());
         return messageData;
     }
-}
-
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     注意事项：
