@@ -113,11 +113,11 @@ public class IoTMqttClient {
     }
 
     public void start () throws MqttException {
-        this.tryConnect();
+        this.doConnect();
     }
 
     public void stop () throws MqttException {
-        this.cancelConnect();
+        this.doDisconnect();
     }
 
     public void subscribe(String topic, int qos, IMessageCallback messageCallback) throws Exception {
@@ -172,7 +172,7 @@ public class IoTMqttClient {
         if (this.mqttClient.isConnected()) {
         } else {
             if (mqttConnectOptions == null) {
-                tryConnect();
+                this.tryConnect();
             } else {
                 this.mqttClient.connectWithResult(mqttConnectOptions);
             }
@@ -180,9 +180,7 @@ public class IoTMqttClient {
     }
 
     public void doDisconnect() throws MqttException {
-        if (this.mqttClient.isConnected()) {
-            this.mqttClient.disconnect();
-        }
+        this.cancelConnect();
     }
 
     /*
@@ -220,13 +218,12 @@ public class IoTMqttClient {
     }
 
     private void cancelConnect() throws MqttException {
-        if (this.timer == null) {
-            return;
-        } else {
+        if (this.timer != null) {
             this.timer.cancel();
             this.timer.purge();
         }
-
-        this.doDisconnect();
+        if (this.mqttClient.isConnected()) {
+            this.mqttClient.disconnect();
+        }
     }
 }

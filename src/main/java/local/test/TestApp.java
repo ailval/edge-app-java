@@ -2,10 +2,7 @@ package local.test;
 
 import com.alibaba.fastjson.JSON;
 
-import com.qingcloud.iot.common.AppSdkEventData;
-import com.qingcloud.iot.common.AppSdkMessageData;
-import com.qingcloud.iot.common.AppSdkMsgEvent;
-import com.qingcloud.iot.common.AppSdkMsgProperty;
+import com.qingcloud.iot.common.*;
 import com.qingcloud.iot.common.CommonConst.*;
 import com.qingcloud.iot.core.*;
 import com.qingcloud.iot.core.mqttclient.IoTMqttCallback;
@@ -26,7 +23,7 @@ public class TestApp {
     static MqttConnectOptions mqttConnectOptions;
 
     static final int DEFAULT_TIMES_DELAY = 1000;
-    static final int DEFAULT_TIMES_PERIOD = 60000;
+    static final int DEFAULT_TIMES_PERIOD = 30000; //30秒为循环周期
 
     public static void main(String[] args) throws Exception {
         testApp = new TestApp();
@@ -55,8 +52,7 @@ public class TestApp {
             @Override
             public void appSdkEventCB(AppSdkEventData eventData,Object object) {
                 System.out.println("appCli appSdkEventCB eventData:" + JSON.toJSONString(eventData)
-                        + ", object:" + JSON.toJSONString(object
-                ));
+                        + ", object:" + JSON.toJSONString(object));
             }
         });
 
@@ -102,7 +98,7 @@ public class TestApp {
         topic.equipSubscribeEventTopic(appCli.getCfg().getAppId(),"data_event");
         //edge/68352965-2fab-11eb-a5e9-52549e81d51b/thing/event/data_event/control
 
-        topic.equipPublishServiceTopic(appCli.getCfg().getAppId(),"data_event");
+        topic.equipPublishServiceTopic(appCli.getCfg().getAppId(),"service_data");
 
         String[] getTopics = {
                 topic.getPublishPropertyTopic(),
@@ -186,6 +182,7 @@ public class TestApp {
     private AppSdkMessageData encodeMessageData(int value) {
         //设置消息数据
         AppSdkMessageData messageData = new AppSdkMessageData(AppSdkMessageType.MessageType_Property);
+
         ArrayList<AppSdkMsgProperty> msgProperties = new ArrayList<AppSdkMsgProperty>();
         AppSdkMsgProperty msgProperty = new AppSdkMsgProperty();
         msgProperty.identifier = "random_data";
@@ -196,10 +193,16 @@ public class TestApp {
         msgProperties.add(msgProperty);
         messageData.setPayload(JSON.toJSONString(msgProperties).getBytes());
 
-        if (value > 50) {
+        if (value < 10) {
             AppSdkMessageData messageData1 = encodeEventData(value);
             try {
                 appCli.sendMessage(messageData1);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else if (value > 20){
+            try {
+                appCli.sendMessage(encodeServiceCallData(String.valueOf(value)));
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -207,7 +210,17 @@ public class TestApp {
         return messageData;
     }
 
+    private String service_fun(String in) {
+        int double_value = 0;
+        if (in != null) {
+            double_value = Integer.parseInt(in)*2;
+        }
+        return String.valueOf(double_value);
+    }
+
     private AppSdkMessageData encodeEventData(int value) {
+        AppSdkMessageData messageData = new AppSdkMessageData(AppSdkMessageType.MessageType_Event);
+
         AppSdkMsgEvent msgEvent = new AppSdkMsgEvent();
         msgEvent.identifier = "data_event";
         msgEvent.timestamp = new Date().getTime();
@@ -215,8 +228,24 @@ public class TestApp {
         hashMap.put("data_event",String.valueOf(value));
         msgEvent.setParams(hashMap);
 
-        AppSdkMessageData messageData = new AppSdkMessageData(AppSdkMessageType.MessageType_Event);
         messageData.setPayload(JSON.toJSONString(msgEvent).getBytes());
         return messageData;
     }
+
+    private AppSdkMessageData encodeServiceCallData(String a) {
+        AppSdkMessageData messageData = new AppSdkMessageData(AppSdkMessageType.MessageType_ServiceCall);
+
+        AppSdkMsgServiceCall msgServiceCall = new AppSdkMsgServiceCall();
+        msgServiceCall.identifier = "service_data";
+        HashMap<String,Object> hashMap = new HashMap<>();
+        hashMap.put("service_in",a);
+
+        String out = service_fun(a);
+        hashMap.put("service_out",out);
+        msgServiceCall.setParams(hashMap);
+
+        messageData.setPayload(JSON.toJSONString(msgServiceCall).getBytes());
+        return messageData;
+    }
+
 }

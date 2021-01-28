@@ -104,7 +104,7 @@ public class Codec {
 
                 return  appSdkMessage2;
 
-            case TopicType_SubscribeService:
+            case TopicType_PublishService:
                 AppSdkMessage appSdkMessage3 = encodeServiceMsg(payload);
                 if (appSdkMessage3 == null || appSdkMessage3.error != null) return null;
 
@@ -238,7 +238,7 @@ public class Codec {
                 Topic topic3 = new Topic(appId, identifier);
                 appSdkMessage.topic = topic3.getSubscribeEventTopic();
                 break;
-            case TopicType_SubscribeService:
+            case TopicType_PublishService:
                 try {
                     if (identifier == null || identifier.equals(""))
                         throw new Exception("invalid identifier:" + identifier);
