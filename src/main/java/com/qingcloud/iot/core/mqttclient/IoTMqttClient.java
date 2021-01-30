@@ -25,6 +25,7 @@ public class IoTMqttClient {
     private TimerTask timerTask;
     private IMqttToken token;
 
+    private OnRecvData onRecvData;
     private IMessageCallback messageCallback;
     private IOnConnectedCallback onConnectedCallback;
     private IOnDisconnectedCallback onDisconnectedCallback;
@@ -42,6 +43,14 @@ public class IoTMqttClient {
 
     public void setToken(IMqttToken token) {
         this.token = token;
+    }
+
+    public OnRecvData getOnRecvData() {
+        return onRecvData;
+    }
+
+    public void setOnRecvData(OnRecvData onRecvData) {
+        this.onRecvData = onRecvData;
     }
 
     public IOnConnectedCallback getOnConnectedCallback() {
@@ -120,36 +129,49 @@ public class IoTMqttClient {
         this.doDisconnect();
     }
 
-    public void subscribe(String topic, int qos, IMessageCallback messageCallback) throws Exception {
+    //mqttclient callback
+//    public void subscribe(String topic, int qos, IMessageCallback messageCallback) throws Exception {
+//        if ((topic == null || qos < 0 || qos > 2))
+//            throw new Exception("invalid arguments");
+//
+//        this.mqttClient.subscribe(topic,qos);
+//    }
+//
+//    public void subscribeMultiple(String[] topics, IMessageCallback messageCallback) throws MqttException {
+//        for (int i=0; i<topics.length; i++) {
+//            if (topics[i] != null && !topics[i].equals("")) {
+//                String topic = topics[i];
+//                try {
+//                    this.subscribe(topic,0,messageCallback);
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        }
+//    }
+
+    //AppCoreClient callback
+    public void subscribe(String topic, int qos, OnRecvData onRecvData) throws Exception {
         if ((topic == null || qos < 0 || qos > 2))
             throw new Exception("invalid arguments");
 
-        if (this.messageCallback == null ) {
-            if (messageCallback != null) {
-                this.messageCallback = messageCallback;
-            }
+        if (onRecvData != null) {
+            this.onRecvData = onRecvData;
         }
 
         this.mqttClient.subscribe(topic,qos);
     }
 
-    public void subscribeMultiple(String[] topics, IMessageCallback messageCallback) throws MqttException {
-        if (this.messageCallback == null ) {
-            if (messageCallback != null) {
-                this.messageCallback = messageCallback;
-            }
+    public void subscribeMultiple(String[] topics, OnRecvData onRecvData) throws MqttException {
+        if (onRecvData != null) {
+            this.onRecvData = onRecvData;
         }
 
         for (int i=0; i<topics.length; i++) {
             if (topics[i] != null && !topics[i].equals("")) {
                 String topic = topics[i];
                 try {
-                    this.subscribe(topic,0,messageCallback);
-                    if (this.messageCallback == null ) {
-                        if (messageCallback != null) {
-                            this.messageCallback = messageCallback;
-                        }
-                    }
+                    this.subscribe(topic,0,onRecvData);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

@@ -2,6 +2,7 @@ package local.test;
 
 import com.alibaba.fastjson.JSON;
 
+import com.alibaba.fastjson.JSONObject;
 import com.qingcloud.iot.common.*;
 import com.qingcloud.iot.common.CommonConst.*;
 import com.qingcloud.iot.core.*;
@@ -12,7 +13,7 @@ import org.eclipse.paho.client.mqttv3.*;
 
 import java.util.*;
 
-public class TestApp {
+public class TestApp implements AppSdkMessageCB, AppSdkEventCB {
     static TestApp testApp;
     static AppCoreClient appCli;
     static Timer timer;
@@ -23,7 +24,7 @@ public class TestApp {
     static MqttConnectOptions mqttConnectOptions;
 
     static final int DEFAULT_TIMES_DELAY = 1000;
-    static final int DEFAULT_TIMES_PERIOD = 5000; //循环周期
+    static final int DEFAULT_TIMES_PERIOD = 30000; //循环周期
 
     public static void main(String[] args) throws Exception {
         testApp = new TestApp();
@@ -32,7 +33,24 @@ public class TestApp {
 
     void run() {
         //创建app客户端
-        appCli = new AppCoreClient(AppSdkRuntimeType.RuntimeType_Docker);
+        appCli = new AppCoreClient(AppSdkRuntimeType.RuntimeType_Docker,this::appSdkMessageCB,this::appSdkEventCB, new String[]{"service_data"});
+        appCli = new AppCoreClient(AppSdkRuntimeType.RuntimeType_Docker,null,null, new String[]{"service_data"});
+
+        appCli.setMessageCB(new AppSdkMessageCB() {
+            @Override
+            public void appSdkMessageCB(AppSdkMessageData messageData,Object object) {
+                System.out.println("appSdkMessageCB:" + messageData.type + new String(messageData.payload));
+                appSdkMessageCB(messageData, object);
+            }
+        });
+
+        appCli.setEventCB(new AppSdkEventCB() {
+            @Override
+            public void appSdkEventCB(AppSdkEventData eventData,Object object) {
+                System.out.println("appSdkEventCB:" + eventData.type + JSON.toJSONString(eventData.payload));
+                appSdkEventCB(eventData, object);
+            }
+        });
 
         appCli.setConnectStatusCB(new OnConnectStatusCB() {
             @Override
@@ -41,28 +59,7 @@ public class TestApp {
             }
         });
 
-        appCli.setOnRecvData(new OnRecvData() {
-            @Override
-            public void onRecvData(String topic,byte[] payload) {
-                System.out.println("appCli onRecvData topic:" + topic + ", payload:" + new String(payload));
-            }
-        });
-
-        appCli.setEventCB(new AppSdkEventCB() {
-            @Override
-            public void appSdkEventCB(AppSdkEventData eventData,Object object) {
-                System.out.println("appCli appSdkEventCB eventData:" + JSON.toJSONString(eventData)
-                        + ", object:" + JSON.toJSONString(object));
-            }
-        });
-
-        appCli.setMessageCB(new AppSdkMessageCB() {
-            @Override
-            public void appSdkMessageCB(AppSdkMessageData messageData,Object object) {
-                System.out.println("appCli appSdkMessageCB messageData:" + JSON.toJSONString(messageData)
-                        + ", object:" + JSON.toJSONString(object));
-            }
-        });
+        appCli.setServiceIds(new String[]{"service_data","test_app_service"});
         appCli.setCoreCallback(new AppCoreCallback(appCli));
 
         //初始化mqttclient
@@ -80,34 +77,37 @@ public class TestApp {
         //mqttclient(回调)
         mqttClient.setCallback(new IoTMqttCallback(ioTMqttClient));
 
-        ioTMqttClient.setMessageCallback(new IMessageCallback() {
-            @Override
-            public void messageCallback(String topic,byte[] payload) {
-                System.out.println("ioTMqttClient messageCallback topic1:" + topic + ", payload:" + new String(payload));
-            }
-        });
-
         //获取主题
         Topic topic = new Topic();
-        ArrayList<MqttMessage> arrayList = new ArrayList<MqttMessage>();
 
-        topic.equipPublishPropertyTopic(appCli.getCfg().getAppId());
-        topic.equipSubscribePropertyTopic(appCli.getCfg().getAppId());
+        topic.buildPublishPropertyTopic(appCli.getCfg().getAppId());
+        topic.buildSubscribePropertyTopic(appCli.getCfg().getAppId());
 
-        topic.equipPublishEventTopic(appCli.getCfg().getAppId(), "data_event"); //数据模型的配置信息
-        topic.equipSubscribeEventTopic(appCli.getCfg().getAppId(),"data_event");
+        topic.buildPublishEventTopic(appCli.getCfg().getAppId(), "data_event"); //数据模型的配置信息
+        topic.buildSubscribeEventTopic(appCli.getCfg().getAppId(),"data_event");
         //edge/68352965-2fab-11eb-a5e9-52549e81d51b/thing/event/data_event/control
+        topic.buildPublishServiceTopic(appCli.getCfg().getAppId(),"service_data");
+        topic.buildSubscribeServiceTopic(appCli.getCodec().getThingId(),appCli.getCodec().getDeviceId(),"service_data");
 
-        topic.equipPublishServiceTopic(appCli.getCfg().getAppId(),"service_data");
+        topic.buildPublishServiceReplyTopic(appCli.getCfg().getThingId(),appCli.getCfg().getDeviceId(),"service_data");
 
         String[] getTopics = {
                 topic.getPublishPropertyTopic(),
+                topic.getSubscribePropertyTopic(),
+
                 topic.getPublishEventTopic(),
-                topic.getPublishServiceTopic()};
+                topic.getSubscribeEventTopic(),
+
+                topic.getPublishServiceTopic(),
+                topic.getSubscribeServiceTopic(),
+
+                topic.getPublishServiceReplyTopic()
+        };
 
         for (String topicStr:getTopics) {
             System.out.println("topic:" + topicStr);
         }
+//        ArrayList<MqttMessage> arrayList = new ArrayList<>();
 
         ioTMqttClient.setTopics(getTopics);
 
@@ -118,9 +118,9 @@ public class TestApp {
                 System.out.println("ioTMqttClient onConnectedCallback:" + bool
                         + ", uri:" + uri);
                 try {
-                    ioTMqttClient.subscribeMultiple(getTopics,new IMessageCallback() {
+                    ioTMqttClient.subscribeMultiple(getTopics,new OnRecvData() {
                         @Override
-                        public void messageCallback(String topic,byte[] payload) {
+                        public void onRecvData(String topic,byte[] payload) {
                             System.out.println("ioTMqttClient subscribeMultiple reconnect:" + topic
                             + ", payload:" + new String(payload));
                         }
@@ -142,9 +142,9 @@ public class TestApp {
 
         //mqttclient(订阅消息)
         try {
-            ioTMqttClient.subscribeMultiple(getTopics,new IMessageCallback() {
+            ioTMqttClient.subscribeMultiple(getTopics,new OnRecvData() {
                 @Override
-                public void messageCallback(String topic,byte[] payload) {
+                public void onRecvData(String topic,byte[] payload) {
                     System.out.println("ioTMqttClient subscribeMultiple first:" + topic
                             + ", payload:" + new String(payload));
                 }
@@ -197,21 +197,21 @@ public class TestApp {
                 }
             }
         };
-        timer.schedule(restartTimerTask, DEFAULT_TIMES_PERIOD * 7);
+        timer.schedule(restartTimerTask, DEFAULT_TIMES_PERIOD * 7, DEFAULT_TIMES_PERIOD);
 
         //清除
-        TimerTask cleanupTimerTask = new TimerTask() {
-            @Override
-            public void run() {
-                System.out.println("cleanupTimerTask appCli:" + appCli.getIoTMqttClient().getMqttClient());
-                try {
-                    appCli.cleanup();
-                } catch (MqttException e) {
-                    e.printStackTrace();
-                }
-            }
-        };
-        timer.schedule(cleanupTimerTask, DEFAULT_TIMES_PERIOD * 10);
+//        TimerTask cleanupTimerTask = new TimerTask() {
+//            @Override
+//            public void run() {
+//                System.out.println("cleanupTimerTask appCli:" + appCli.getIoTMqttClient().getMqttClient());
+//                try {
+//                    appCli.cleanup();
+//                } catch (MqttException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        };
+//        timer.schedule(cleanupTimerTask, DEFAULT_TIMES_PERIOD * 10);
     }
 
     void postData() {
@@ -303,6 +303,51 @@ public class TestApp {
 
         messageData.setPayload(JSON.toJSONString(msgServiceCall).getBytes());
         return messageData;
+    }
+
+    @Override
+    public void appSdkEventCB(AppSdkEventData eventData,Object object) {
+        System.out.println("appSdkEventCB called");
+        System.out.println("eventData:" + eventData.type);
+    }
+
+    @Override
+    public void appSdkMessageCB(AppSdkMessageData messageData,Object object) {
+        System.out.println("appSdkEventCB called");
+
+        if (messageData == null) {
+            System.out.println("appSdkMessageCB failed, messageData is null");
+            return;
+        }
+        System.out.println("messageData:" + messageData.type);
+        System.out.println("messageData:" + new String(messageData.payload));
+
+        if (messageData.type == AppSdkMessageType.MessageType_ServiceCall) {
+            AppSdkMsgServiceCall msgServiceCall = JSONObject.parseObject(new String(messageData.getPayload()),AppSdkMsgServiceCall.class);
+            AppSdkMsgServiceReply msgServiceReply = new AppSdkMsgServiceReply();
+            if (msgServiceCall.identifier.equals("service_data")) {
+                msgServiceReply.messageId = msgServiceCall.messageId;
+                msgServiceReply.identifier = msgServiceCall.identifier;
+                msgServiceReply.code = 200;
+                msgServiceReply.params = msgServiceCall.params;
+            }
+
+            String json = JSON.toJSONString(msgServiceReply);
+            AppSdkMessageData replyData = new AppSdkMessageData();
+            replyData.type = AppSdkMessageType.MessageType_ServiceReply;
+            replyData.payload = json.getBytes();
+
+            try {
+                Error error = appCli.sendMessage(replyData);
+                if (error != null) {
+                    System.out.println("onMessage CallReply SendMessage failed");
+                    return;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            System.out.println("onMessage CallReply SendMessage success");
+        }
     }
 
 }

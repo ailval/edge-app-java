@@ -63,73 +63,85 @@ public class Codec {
     }
 
     public AppSdkMessage encodeMessage(String topicTypeStr, byte[] payload) {
-
         TopicTypeConvert t = new TopicTypeConvert();
         TopicTypeConvert.TopicType topicType = t.topicTypeByTopicTypeString(topicTypeStr);
-
         Topic topic = new Topic(appId);
+
+        AppSdkMessage appSdkMessage = new AppSdkMessage();
+        AppSdkMessage encodeTopicMsg = new AppSdkMessage();
+
         switch (topicType) {
             case TopicType_SubscribeProperty:
-                AppSdkMessage appSdkMessage = encodePropertyMsg(payload);
+                appSdkMessage = encodePropertyMsg(payload);
                 if (appSdkMessage == null) return null;
 
                 appSdkMessage.topic = topic.getSubscribePropertyTopic();
                 appSdkMessage.topicType = topicType;
                 appSdkMessage.topicTypeString = topicTypeStr;
-
-                return appSdkMessage;
+                break;
 
             case TopicType_PublishProperty:
-                AppSdkMessage appSdkMessage1 = encodePropertyMsg(payload);
-                if (appSdkMessage1 == null) return null;
+                appSdkMessage = encodePropertyMsg(payload);
+                if (appSdkMessage == null) return null;
 
-                appSdkMessage1.topic = topic.getPublishPropertyTopic();
-                appSdkMessage1.topicType = topicType;
-                appSdkMessage1.topicTypeString = topicTypeStr;
-                return appSdkMessage1;
+                appSdkMessage.topic = topic.getPublishPropertyTopic();
+                appSdkMessage.topicType = topicType;
+                appSdkMessage.topicTypeString = topicTypeStr;
+                break;
 
             case TopicType_SubscribeEvent:
             case TopicType_PublishEvent:
-                AppSdkMessage appSdkMessage2 = encodeEventMsg(payload);
-                if (appSdkMessage2 == null || appSdkMessage2.error != null)
-                    return null;
+                appSdkMessage = encodeEventMsg(payload);
+                if (appSdkMessage == null || appSdkMessage.error != null) return null;
 
-                AppSdkMessage encodeTopicMsg = encodeTopic(topicTypeStr, appSdkMessage2.identifier);
-                if (encodeTopicMsg == null || encodeTopicMsg.error != null)
-                    return null;
+                encodeTopicMsg = encodeTopic(topicTypeStr, appSdkMessage.identifier);
+                if (encodeTopicMsg == null || encodeTopicMsg.error != null) return null;
 
-                appSdkMessage2.topic = encodeTopicMsg.topic;
-                appSdkMessage2.topicTypeString = topicTypeStr;
-                appSdkMessage2.topicType = topicType;
-
-                return  appSdkMessage2;
+                appSdkMessage.topic = encodeTopicMsg.topic;
+                appSdkMessage.topicTypeString = topicTypeStr;
+                appSdkMessage.topicType = topicType;
+                break;
 
             case TopicType_PublishService:
-                AppSdkMessage appSdkMessage3 = encodeServiceMsg(payload);
-                if (appSdkMessage3 == null || appSdkMessage3.error != null) return null;
+            case TopicType_SubscribeService:
+                appSdkMessage = encodeServiceMsg(payload);
+                if (appSdkMessage == null || appSdkMessage.error != null) return null;
 
-                AppSdkMessage encodeTopicMsg1 = encodeTopic(topicTypeStr, appSdkMessage3.identifier);
-                if (encodeTopicMsg1 == null || encodeTopicMsg1.error != null) return null;
+                encodeTopicMsg = encodeTopic(topicTypeStr, appSdkMessage.identifier);
+                if (encodeTopicMsg == null || encodeTopicMsg.error != null) return null;
+                appSdkMessage.topic = encodeTopicMsg.topic;
+                appSdkMessage.topicTypeString = topicTypeStr;
+                appSdkMessage.topicType = topicType;
+                break;
 
-                appSdkMessage3.topic = encodeTopicMsg1.topic;
-                appSdkMessage3.topicTypeString = topicTypeStr;
-                appSdkMessage3.topicType = topicType;
+            case TopicType_PublishServiceReply:
+                appSdkMessage = encodeServiceReplyMsg(payload);
+                if (appSdkMessage == null || appSdkMessage.error != null) return null;
 
-                return appSdkMessage3;
+                encodeTopicMsg = encodeTopic(topicTypeStr, appSdkMessage.identifier);
+                if (encodeTopicMsg == null || encodeTopicMsg.error != null) return null;
+
+                appSdkMessage.topic = encodeTopicMsg.topic;
+                appSdkMessage.topicTypeString = topicTypeStr;
+                appSdkMessage.topicType = topicType;
+                break;
 
             default:
                 return null;
         }
+
+        return appSdkMessage;
     }
 
     public AppSdkMessage decodeMessage(String topic, byte[] payload) {
-        AppSdkMessage appSdkMessage = decodeTopic(topic);
+        AppSdkMessage message = decodeTopic(topic);
+        AppSdkMessage appSdkMessage = new AppSdkMessage();
 
         if (appSdkMessage == null || appSdkMessage.error != null) return null;
 
-        TopicType topicType = appSdkMessage.topicType;
-        String topicTypeStr = appSdkMessage.topicTypeString;
-        String identifier = appSdkMessage.identifier;
+        TopicType topicType = message.topicType;
+        String topicTypeStr = message.topicTypeString;
+        String identifier = message.identifier;
 
         switch (topicType) {
             case TopicType_SubscribeProperty:
@@ -140,9 +152,7 @@ public class Codec {
                 appSdkMessage.topicType = topicType;
                 appSdkMessage.topicTypeString = topicTypeStr;
                 appSdkMessage.identifier = identifier;
-                appSdkMessage.setOriginalTopic(topic);
-                return appSdkMessage;
-
+                break;
             case TopicType_SubscribeEvent:
             case TopicType_PublishEvent:
                 appSdkMessage = decodeEventMsg(identifier, payload);
@@ -151,20 +161,24 @@ public class Codec {
                 appSdkMessage.topicType = topicType;
                 appSdkMessage.topicTypeString = topicTypeStr;
                 appSdkMessage.identifier = identifier;
-                appSdkMessage.setOriginalTopic(topic);
-                return appSdkMessage;
-
+                break;
             case TopicType_PublishService:
+            case TopicType_SubscribeService:
                 appSdkMessage = decodeServiceMsg(identifier, payload);
                 if (appSdkMessage == null || appSdkMessage.error != null) return null;
 
                 appSdkMessage.topicType = topicType;
                 appSdkMessage.topicTypeString = topicTypeStr;
                 appSdkMessage.identifier = identifier;
-                appSdkMessage.setOriginalTopic(topic);
-                return appSdkMessage;
+                break;
+            case TopicType_PublishServiceReply:
+                appSdkMessage = decodeServiceReplyMsg(identifier, payload);
+                if (appSdkMessage == null || appSdkMessage.error != null) return null;
 
-            case TopicType_SubscribeService:
+                appSdkMessage.topicType = topicType;
+                appSdkMessage.topicTypeString = topicTypeStr;
+                appSdkMessage.identifier = identifier;
+                break;
             case TopicType_Unknown:
             default:
                 appSdkMessage.topicType = TopicType.TopicType_Unknown;
@@ -172,8 +186,9 @@ public class Codec {
                 appSdkMessage.payload = null;
                 appSdkMessage.error = new Error("Unsupported topic type: " + topicType + "topicTypeString:" + topicTypeStr);
                 appSdkMessage.setOriginalTopic(topic);
-                return appSdkMessage;
+                break;
         }
+        return appSdkMessage;
     }
 
     //return message: topic, error
@@ -187,9 +202,9 @@ public class Codec {
             return appSdkMessage;
         }
 
-        if ((topicTypeString.equals(TopicTypeConvert.TopicType_PublishEvent)
-            || topicTypeString.equals(TopicTypeConvert.TopicType_SubscribeEvent)
-            || topicTypeString.equals(TopicTypeConvert.TopicType_PublishService)) &&
+        if ((topicTypeString.equals(TopicTypeConvert.TOPIC_TYPE_PUB_EVENT)
+            || topicTypeString.equals(TopicTypeConvert.TOPIC_TYPE_SUB_EVENT)
+            || topicTypeString.equals(TopicTypeConvert.TOPIC_TYPE_PUB_SERVICE)) &&
             ( identifier == null || identifier.equals(""))) {
             appSdkMessage.topicTypeString = "";
             appSdkMessage.error = new Error("invalid identifier arguments");
@@ -200,54 +215,80 @@ public class Codec {
         appSdkMessage.topicType = topicType;
         appSdkMessage.topicTypeString = topicTypeString;
 
-        try {
-            if (appId == null || appId.equals(""))
-                throw new Exception("invalid appId:" + appId);
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (appId == null || appId.equals("")) {
+            appSdkMessage.error = new Error("invalid appId:" + appId + ", TopicType:" + topicTypeString);
+            return appSdkMessage;
         }
 
+        Topic topic = new Topic();
         switch (topicType) {
             case TopicType_PublishProperty:
-                Topic topic = new Topic(appId);
+                topic = new Topic(appId);
                 appSdkMessage.topic = topic.getPublishPropertyTopic();
                 break;
             case TopicType_SubscribeProperty:
-                Topic topic1 = new Topic(appId);
-                appSdkMessage.topic = topic1.getSubscribePropertyTopic();
+                topic = new Topic(appId);
+                appSdkMessage.topic = topic.getSubscribePropertyTopic();
                 break;
             case TopicType_PublishEvent:
-                try {
-                    if (identifier == null || identifier.equals(""))
-                        throw new Exception("invalid identifier:" + identifier);
-                } catch (Exception e) {
-                    e.printStackTrace();
+                if (identifier == null || identifier.equals("")) {
+                    appSdkMessage.error = new Error("invalid identifier:" + identifier + ", TopicType:" + topicTypeString);
+                    return appSdkMessage;
                 }
-
-                Topic topic2 = new Topic(appId, identifier);
-                appSdkMessage.topic = topic2.getPublishEventTopic();
+                topic = new Topic(appId, identifier);
+                appSdkMessage.topic = topic.getPublishEventTopic();
                 break;
             case TopicType_SubscribeEvent:
-                try {
-                    if (identifier == null || identifier.equals(""))
-                        throw new Exception("invalid identifier:" + identifier);
-                } catch (Exception e) {
-                    e.printStackTrace();
+                if (identifier == null || identifier.equals("")) {
+                    appSdkMessage.error = new Error("invalid identifier:" + identifier + ", TopicType:" + topicTypeString);
+                    return appSdkMessage;
                 }
 
-                Topic topic3 = new Topic(appId, identifier);
-                appSdkMessage.topic = topic3.getSubscribeEventTopic();
+                topic = new Topic(appId, identifier);
+                appSdkMessage.topic = topic.getSubscribeEventTopic();
                 break;
             case TopicType_PublishService:
-                try {
-                    if (identifier == null || identifier.equals(""))
-                        throw new Exception("invalid identifier:" + identifier);
-                } catch (Exception e) {
-                    e.printStackTrace();
+                if (identifier == null || identifier.equals("")) {
+                    appSdkMessage.error = new Error("invalid identifier:" + identifier + ", TopicType:" + topicTypeString);
+                    return appSdkMessage;
                 }
 
-                Topic topic4 = new Topic(appId, identifier);
-                appSdkMessage.topic = topic4.getPublishServiceTopic();
+                topic = new Topic(appId, identifier);
+                appSdkMessage.topic = topic.getPublishServiceTopic();
+                break;
+            case TopicType_SubscribeService:
+                if (thingId == null || thingId.equals("")) {
+                    appSdkMessage.error = new Error("invalid thingId:" + thingId + ", TopicType:" + topicTypeString);
+                    return appSdkMessage;
+                }
+                if (deviceId == null || deviceId.equals("")) {
+                    appSdkMessage.error = new Error("invalid deviceId:" + deviceId + ", TopicType:" + topicTypeString);
+                    return appSdkMessage;
+                }
+                if (identifier == null || identifier.equals("")) {
+                    appSdkMessage.error = new Error("invalid identifier:" + identifier + ", TopicType:" + topicTypeString);
+                    return appSdkMessage;
+                }
+
+                topic = new Topic(thingId,deviceId,identifier);
+                appSdkMessage.topic = topic.getSubscribeServiceTopic();
+                break;
+            case TopicType_PublishServiceReply:
+                if (thingId == null || thingId.equals("")) {
+                    appSdkMessage.error = new Error("invalid thingId:" + thingId + ", TopicType:" + topicTypeString);
+                    return appSdkMessage;
+                }
+                if (deviceId == null || deviceId.equals("")) {
+                    appSdkMessage.error = new Error("invalid deviceId:" + deviceId + ", TopicType:" + topicTypeString);
+                    return appSdkMessage;
+                }
+                if (identifier == null || identifier.equals("")) {
+                    appSdkMessage.error = new Error("invalid identifier:" + identifier + ", TopicType:" + topicTypeString);
+                    return appSdkMessage;
+                }
+
+                topic = new Topic(thingId,deviceId,identifier);
+                appSdkMessage.topic = topic.getPublishServiceReplyTopic();
                 break;
             default:
                 appSdkMessage.error = new Error("unsupported topicType: " + topicTypeString);
@@ -272,14 +313,13 @@ public class Codec {
         //parse
         int size = topic.split("/").length;
         String[] units = topic.split("/");
-        if (size != 7) {
+        if (size != 7 && size != 8) {
             appSdkMessage.error = new Error("invalid topic format");
             appSdkMessage.topicType = TopicType.TopicType_Unknown;
             appSdkMessage.topic = "";
             return appSdkMessage;
         } else if (!units[0].equals("") ||
-                !units[1].equals("edge") ||
-                !units[3].equals("thing")) {
+                    (!units[1].equals("edge") && !units[1].equals("sys"))) {
             appSdkMessage.error = new Error("invalid topic format:" + topic);
             appSdkMessage.topicType = TopicType.TopicType_Unknown;
             appSdkMessage.topic = "";
@@ -291,29 +331,42 @@ public class Codec {
         appSdkMessage.appId = units[2];
         appSdkMessage.identifier = "";
 
-        switch (units[4]) {
-            case "property":
-                if (units[6].equals("post")) {
-                    appSdkMessage.topicType = TopicType.TopicType_SubscribeProperty;
-                } else if (units[6].equals("control")) {
-                    appSdkMessage.topicType = TopicType.TopicType_PublishProperty;
-                }
-                break;
-            case "event":
-                if (units[6].equals("post")) {
-                    appSdkMessage.topicType = TopicType.TopicType_SubscribeEvent;
-                } else if (units[6].equals("control")) {
-                    appSdkMessage.topicType = TopicType.TopicType_PublishEvent;
-                }
+        if (units[1].equals("edge")) {
+            switch (units[4]) {
+                case "property":
+                    if (units[6].equals("post")) {
+                        appSdkMessage.topicType = TopicType.TopicType_SubscribeProperty;
+                    } else if (units[6].equals("control")) {
+                        appSdkMessage.topicType = TopicType.TopicType_PublishProperty;
+                    }
+                    break;
+                case "event":
+                    if (units[6].equals("post")) {
+                        appSdkMessage.topicType = TopicType.TopicType_SubscribeEvent;
+                    } else if (units[6].equals("control")) {
+                        appSdkMessage.topicType = TopicType.TopicType_PublishEvent;
+                    }
 
-                appSdkMessage.identifier = units[5];
-                break;
-            case "service":
-                if (units[6].equals("call")) {
-                    appSdkMessage.topicType = TopicType.TopicType_PublishService;
+                    appSdkMessage.identifier = units[5];
+                    break;
+                case "service":
+                    if (units[6].equals("call")) {
+                        appSdkMessage.topicType = TopicType.TopicType_PublishService;
+                    }
+                    appSdkMessage.identifier = units[5];
+                    break;
+                default:
+                    break;
+            }
+        } else {
+            if (units[5].equals("service")) {
+                if (units[7].equals("call")) {
+                    appSdkMessage.topicType = TopicType.TopicType_SubscribeService;
+                } else if (units[7].equals("call_reply")) {
+                    appSdkMessage.topicType = TopicType.TopicType_PublishServiceReply;
                 }
-                appSdkMessage.identifier = units[5];
-                break;
+                appSdkMessage.identifier = units[6];
+            }
         }
 
         if (appSdkMessage.topicType == TopicType.TopicType_Unknown) {
@@ -341,10 +394,7 @@ public class Codec {
     public AppSdkMessage encodePropertyMsg(byte[] payload) {
         String payloadStr = new String(payload);
         List<AppSdkMsgProperty> arrayList = JSON.parseArray(payloadStr, AppSdkMsgProperty.class);
-
-        if (arrayList.size() == 0) {
-            return null;
-        }
+        if (arrayList == null || arrayList.size() == 0) return null;
 
         long now = new Date().getTime()/1000000;
         MdmpPropertyMsg mdmpPropertyMsg = new MdmpPropertyMsg();
@@ -376,12 +426,8 @@ public class Codec {
     }
 
     public AppSdkMessage encodeEventMsg(byte[] payload) {
-
         AppSdkMsgEvent appSdkMsgEvent = JSONObject.parseObject(new String(payload), AppSdkMsgEvent.class);
-
-        if (appSdkMsgEvent == null) {
-            return null;
-        }
+        if (appSdkMsgEvent == null) return null;
 
         long now = new Date().getTime()/1000000;
         MdmpEventMsg mdmpEventMsg = new MdmpEventMsg();
@@ -402,7 +448,6 @@ public class Codec {
         mdmpEventMsg.params = modelEventData;
 
         String msgStr = JSON.toJSONString(mdmpEventMsg);
-
         AppSdkMessage appSdkMessage = new AppSdkMessage();
         appSdkMessage.identifier = appSdkMsgEvent.identifier;
         appSdkMessage.payload = msgStr.getBytes();
@@ -412,44 +457,55 @@ public class Codec {
 
     public AppSdkMessage encodeServiceMsg(byte[] payload) {
         AppSdkMsgServiceCall appSdkMsgServiceCall = JSONObject.parseObject(new String(payload), AppSdkMsgServiceCall.class);
-
-        if (appSdkMsgServiceCall == null) {
-            return null;
-        }
+        if (appSdkMsgServiceCall == null) return null;
 
         MdmpServiceCallMsg mdmpServiceCallMsg = new MdmpServiceCallMsg();
         mdmpServiceCallMsg.mdmpMsgHeader = new MdmpMsgHeader();
-        mdmpServiceCallMsg.mdmpMsgHeader.setId(UUID.randomUUID().toString());
+        mdmpServiceCallMsg.mdmpMsgHeader.setId(appSdkMsgServiceCall.messageId);
         mdmpServiceCallMsg.mdmpMsgHeader.setVersion(DefaultMessageVersion);
-
         MessageTemplate template = new MessageTemplate(appSdkMsgServiceCall.identifier);
         mdmpServiceCallMsg.mdmpMsgHeader.setType(template.getMessageTemplateService());
         mdmpServiceCallMsg.mdmpMsgHeader.metadata.modelId = thingId;
         mdmpServiceCallMsg.mdmpMsgHeader.metadata.entityId = deviceId;
-
         ServiceMetadata serviceMetadata = new ServiceMetadata();
         serviceMetadata.modelId = thingId;
         serviceMetadata.entityId = deviceId;
-
         mdmpServiceCallMsg.params = appSdkMsgServiceCall.params;
-        String msgStr = JSON.toJSONString(mdmpServiceCallMsg);
 
+        String jsonMsg = JSON.toJSONString(mdmpServiceCallMsg);
         AppSdkMessage appSdkMessage = new AppSdkMessage();
         appSdkMessage.identifier = appSdkMsgServiceCall.identifier;
-        appSdkMessage.payload = msgStr.getBytes();
+        appSdkMessage.payload = jsonMsg.getBytes();
+
+        return appSdkMessage;
+    }
+
+    public AppSdkMessage encodeServiceReplyMsg(byte[] payload) {
+        AppSdkMsgServiceReply appSdkMsgServiceReply = JSONObject.parseObject(new String(payload), AppSdkMsgServiceReply.class);
+        if (appSdkMsgServiceReply == null) return null;
+
+        MdmpServiceReplyMsg mdmpServiceReplyMsg = new MdmpServiceReplyMsg();
+        mdmpServiceReplyMsg.mdmpMsgReplyHeader = new MdmpMsgReplyHeader();
+        mdmpServiceReplyMsg.mdmpMsgReplyHeader.id = appSdkMsgServiceReply.messageId;
+        mdmpServiceReplyMsg.mdmpMsgReplyHeader.version = DefaultMessageVersion;
+        mdmpServiceReplyMsg.mdmpMsgReplyHeader.code = appSdkMsgServiceReply.code;
+        mdmpServiceReplyMsg.data = appSdkMsgServiceReply.params;
+
+        String jsonMsg = JSON.toJSONString(mdmpServiceReplyMsg);
+        AppSdkMessage appSdkMessage = new AppSdkMessage();
+        appSdkMessage.identifier = appSdkMsgServiceReply.identifier;
+        appSdkMessage.payload = jsonMsg.getBytes();
 
         return appSdkMessage;
     }
 
     public AppSdkMessage decodePropertyMsg(byte[] payload) {
         MdmpPropertyMsg mdmpPropertyMsg = JSONObject.parseObject(new String(payload), MdmpPropertyMsg.class);
-
         if (mdmpPropertyMsg == null) return null;
 
         ArrayList<AppSdkMsgProperty> arrayList = new ArrayList<>();
-
         Map<String,ModelPropertyData> map = mdmpPropertyMsg.getParams();
-        for (Map.Entry<String,ModelPropertyData> entry:map.entrySet()) {
+        for (Map.Entry<String,ModelPropertyData> entry : map.entrySet()) {
             AppSdkMsgProperty appSdkMsgProperty = new AppSdkMsgProperty();
             appSdkMsgProperty.identifier = entry.getKey();
             appSdkMsgProperty.value = entry.getValue().value;
@@ -458,7 +514,6 @@ public class Codec {
         }
 
         String json = JSON.toJSONString(arrayList.toArray());
-
         AppSdkMessage appSdkMessage = new AppSdkMessage();
         appSdkMessage.payload = json.getBytes();
 
@@ -467,7 +522,6 @@ public class Codec {
 
     public AppSdkMessage decodeEventMsg(String identifier, byte[] payload) {
         MdmpEventMsg mdmpEventMsg = JSONObject.parseObject(new String(payload), MdmpEventMsg.class);
-
         if (mdmpEventMsg == null) return null;
 
         AppSdkMsgEvent appSdkMsgEvent = new AppSdkMsgEvent();
@@ -476,7 +530,6 @@ public class Codec {
         appSdkMsgEvent.params = mdmpEventMsg.params.value;
 
         String json = JSON.toJSONString(appSdkMsgEvent);
-
         AppSdkMessage appSdkMessage = new AppSdkMessage();
         appSdkMessage.payload = json.getBytes();
         appSdkMessage.identifier = identifier;
@@ -486,15 +539,31 @@ public class Codec {
 
     public AppSdkMessage decodeServiceMsg(String identifier, byte[] payload) {
         MdmpServiceCallMsg mdmpServiceCallMsg = JSONObject.parseObject(new String(payload), MdmpServiceCallMsg.class);
-
         if (mdmpServiceCallMsg == null) return null;
 
         AppSdkMsgServiceCall appSdkMsgServiceCall = new AppSdkMsgServiceCall();
+        appSdkMsgServiceCall.messageId = mdmpServiceCallMsg.mdmpMsgHeader.id;
         appSdkMsgServiceCall.identifier = identifier;
         appSdkMsgServiceCall.params = mdmpServiceCallMsg.params;
 
         String json = JSON.toJSONString(appSdkMsgServiceCall);
+        AppSdkMessage appSdkMessage = new AppSdkMessage();
+        appSdkMessage.payload = json.getBytes();
+        appSdkMessage.identifier = identifier;
 
+        return appSdkMessage;
+    }
+
+    public AppSdkMessage decodeServiceReplyMsg(String identifier, byte[] payload) {
+        MdmpServiceReplyMsg mdmpServiceReplyMsg = JSONObject.parseObject(new String(payload), MdmpServiceReplyMsg.class);
+        if (mdmpServiceReplyMsg == null) return null;
+
+        AppSdkMsgServiceCall appSdkMsgServiceCall = new AppSdkMsgServiceCall();
+        appSdkMsgServiceCall.messageId = mdmpServiceReplyMsg.mdmpMsgReplyHeader.id;
+        appSdkMsgServiceCall.identifier = identifier;
+        appSdkMsgServiceCall.params = mdmpServiceReplyMsg.data;
+
+        String json = JSON.toJSONString(appSdkMsgServiceCall);
         AppSdkMessage appSdkMessage = new AppSdkMessage();
         appSdkMessage.payload = json.getBytes();
         appSdkMessage.identifier = identifier;

@@ -2,10 +2,11 @@ package com.qingcloud.iot.common;
 
 import java.util.HashMap;
 
-public class AppSdkMsgServiceCall {
+public class AppSdkMsgServiceReply {
     public String messageId;
     public String identifier;
-    public HashMap<String, Object> params;
+    public Integer code;
+    public HashMap<String,Object> params;
 
     public String getMessageId() {
         return messageId;
@@ -21,6 +22,14 @@ public class AppSdkMsgServiceCall {
 
     public void setIdentifier(String identifier) {
         this.identifier = identifier;
+    }
+
+    public Integer getCode() {
+        return code;
+    }
+
+    public void setCode(Integer code) {
+        this.code = code;
     }
 
     public HashMap<String, Object> getParams() {

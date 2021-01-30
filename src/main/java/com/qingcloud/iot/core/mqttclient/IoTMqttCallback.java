@@ -37,14 +37,10 @@ public class IoTMqttCallback implements MqttCallbackExtended {
 
     @Override
     public void messageArrived(String topic,MqttMessage message) {
-        if (ioTMqttClient.getMessageCallback() != null) {
-            ioTMqttClient.getMessageCallback().messageCallback(topic, message.getPayload());
+        System.out.println("IoTMqttCallback messageArrived:" + topic + ", message:" + new String(message.getPayload()));
+        if (ioTMqttClient.getOnRecvData() != null) {
+            ioTMqttClient.getOnRecvData().onRecvData(topic,message.getPayload());
         }
-
-        if (ioTMqttClient.getAppCoreClient().getOnRecvData() != null) {
-            ioTMqttClient.getAppCoreClient().getOnRecvData().onRecvData(topic,message.getPayload());
-        }
-
     }
 
     @Override

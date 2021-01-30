@@ -18,6 +18,7 @@ public class CommonConst {
         MessageType_Property,
         MessageType_Event,
         MessageType_ServiceCall,
+        MessageType_ServiceReply,
         MessageType_Unknown
     }
 
