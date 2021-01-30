@@ -52,13 +52,6 @@ public class TestApp implements AppSdkMessageCB, AppSdkEventCB {
             }
         });
 
-        appCli.setConnectStatusCB(new OnConnectStatusCB() {
-            @Override
-            public void onConnectStatusCB(boolean isConnected,String details) {
-                System.out.println("appCli onConnectStatusCB isConnected:" + isConnected + ", details:" + details);
-            }
-        });
-
         appCli.setServiceIds(new String[]{"service_data","test_app_service"});
         appCli.setCoreCallback(new AppCoreCallback(appCli));
 
@@ -76,6 +69,13 @@ public class TestApp implements AppSdkMessageCB, AppSdkEventCB {
 
         //mqttclient(回调)
         mqttClient.setCallback(new IoTMqttCallback(ioTMqttClient));
+
+        appCli.getIoTMqttClient().setOnConnectStatusCB(new OnConnectStatusCB() {
+            @Override
+            public void onConnectStatusCB(boolean isConnected,String details) {
+                System.out.println("appCli.getIoTMqttClient onConnectStatusCB:" + isConnected + details);
+            }
+        });
 
         //获取主题
         Topic topic = new Topic();

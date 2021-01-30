@@ -21,8 +21,8 @@ public class IoTMqttCallback implements MqttCallbackExtended {
             ioTMqttClient.getOnConnectedCallback().onConnectedCallback(reconnect,serverURI);
         }
 
-        if (ioTMqttClient.getAppCoreClient().getConnectStatusCB() != null) {
-            ioTMqttClient.getAppCoreClient().getConnectStatusCB().onConnectStatusCB(reconnect, serverURI);
+        if (ioTMqttClient.getOnConnectStatusCB() != null) {
+            ioTMqttClient.getOnConnectStatusCB().onConnectStatusCB(reconnect, serverURI);
         }
     }
 
@@ -32,6 +32,10 @@ public class IoTMqttCallback implements MqttCallbackExtended {
 
         if (ioTMqttClient.getOnDisconnectedCallback() != null) {
             ioTMqttClient.getOnDisconnectedCallback().onDisconnectedCallback(true, cause);
+        }
+
+        if (ioTMqttClient.getOnConnectStatusCB() != null) {
+            ioTMqttClient.getOnConnectStatusCB().onConnectStatusCB(false, cause.getLocalizedMessage());
         }
     }
 

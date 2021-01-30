@@ -30,6 +30,16 @@ public class IoTMqttClient {
     private IOnConnectedCallback onConnectedCallback;
     private IOnDisconnectedCallback onDisconnectedCallback;
 
+    public OnConnectStatusCB getOnConnectStatusCB() {
+        return onConnectStatusCB;
+    }
+
+    public void setOnConnectStatusCB(OnConnectStatusCB onConnectStatusCB) {
+        this.onConnectStatusCB = onConnectStatusCB;
+    }
+
+    private OnConnectStatusCB onConnectStatusCB;
+
     private String[] topics;
 
     private static final int DEFAULT_KEEP_ALIVE_DEFAULT = 60;
@@ -128,27 +138,6 @@ public class IoTMqttClient {
     public void stop () throws MqttException {
         this.doDisconnect();
     }
-
-    //mqttclient callback
-//    public void subscribe(String topic, int qos, IMessageCallback messageCallback) throws Exception {
-//        if ((topic == null || qos < 0 || qos > 2))
-//            throw new Exception("invalid arguments");
-//
-//        this.mqttClient.subscribe(topic,qos);
-//    }
-//
-//    public void subscribeMultiple(String[] topics, IMessageCallback messageCallback) throws MqttException {
-//        for (int i=0; i<topics.length; i++) {
-//            if (topics[i] != null && !topics[i].equals("")) {
-//                String topic = topics[i];
-//                try {
-//                    this.subscribe(topic,0,messageCallback);
-//                } catch (Exception e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//        }
-//    }
 
     //AppCoreClient callback
     public void subscribe(String topic, int qos, OnRecvData onRecvData) throws Exception {

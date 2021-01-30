@@ -13,7 +13,7 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 
 import java.util.ArrayList;
 
-public class AppCoreClient implements ICore, OnConnectStatusCB, OnRecvData {
+public class AppCoreClient implements ICore, OnRecvData {
 
     private AppCoreCallback coreCallback;
 
@@ -81,14 +81,6 @@ public class AppCoreClient implements ICore, OnConnectStatusCB, OnRecvData {
 
     public String getUrl() {
         return url;
-    }
-
-    public OnConnectStatusCB getConnectStatusCB() {
-        return connectStatusCB;
-    }
-
-    public void setConnectStatusCB(OnConnectStatusCB connectStatusCB) {
-        this.connectStatusCB = connectStatusCB;
     }
 
     public AppCoreClient(AppSdkRuntimeType type,AppSdkMessageCB messageCB,AppSdkEventCB eventCB,String[] serviceIds) {
@@ -239,7 +231,6 @@ public class AppCoreClient implements ICore, OnConnectStatusCB, OnRecvData {
         return null;
     }
 
-    @Override
     public void onConnectStatusCB(boolean bool, String details) {
         if (bool == true) {
             System.out.println("APP SDK onConnectStatus called, status:" + true + details);
@@ -306,7 +297,7 @@ public class AppCoreClient implements ICore, OnConnectStatusCB, OnRecvData {
             }
             ioTMqttClient.getMqttClient().setCallback(new IoTMqttCallback(ioTMqttClient));
             try {
-                ioTMqttClient.subscribeMultiple(topics,(OnRecvData) this::onRecvData);
+                ioTMqttClient.subscribeMultiple(topics,this::onRecvData);
             } catch (MqttException e) {
                 e.printStackTrace();
             }

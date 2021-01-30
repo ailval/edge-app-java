@@ -3,7 +3,7 @@ package com.qingcloud.iot.core;
 import com.qingcloud.iot.common.AppSdkEventData;
 import com.qingcloud.iot.common.AppSdkMessageData;
 
-public class AppCoreCallback implements OnConnectStatusCB, AppSdkEventCB, AppSdkMessageCB {
+public class AppCoreCallback implements AppSdkEventCB, AppSdkMessageCB {
     private AppCoreClient appCoreClient;
 
     public AppCoreClient getAppCoreClient() {
@@ -28,10 +28,4 @@ public class AppCoreCallback implements OnConnectStatusCB, AppSdkEventCB, AppSdk
         }
     }
 
-    @Override
-    public void onConnectStatusCB(boolean isConnected,String details) {
-        if (this.appCoreClient.getConnectStatusCB() != null) {
-            this.appCoreClient.getConnectStatusCB().onConnectStatusCB(isConnected,details);
-        }
-    }
 }
