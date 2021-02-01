@@ -23,8 +23,6 @@ public class AppCoreClient implements ICore, OnRecvData {
     private AppSdkMessageCB messageCB;
     private AppSdkEventCB eventCB;
 
-    private OnConnectStatusCB connectStatusCB;
-
     private Object eventParam;
     private IoTMqttClient ioTMqttClient;
     private Codec codec;

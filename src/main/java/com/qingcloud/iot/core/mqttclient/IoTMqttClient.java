@@ -9,14 +9,6 @@ import java.util.*;
 
 public class IoTMqttClient {
 
-    public AppCoreClient getAppCoreClient() {
-        return appCoreClient;
-    }
-
-    public void setAppCoreClient(AppCoreClient appCoreClient) {
-        this.appCoreClient = appCoreClient;
-    }
-
     private AppCoreClient appCoreClient;
     private MqttClient mqttClient;
     private MqttConnectOptions mqttConnectOptions;
@@ -29,6 +21,13 @@ public class IoTMqttClient {
     private IMessageCallback messageCallback;
     private IOnConnectedCallback onConnectedCallback;
     private IOnDisconnectedCallback onDisconnectedCallback;
+    private OnConnectStatusCB onConnectStatusCB;
+    private String[] topics;
+
+    private static final int DEFAULT_KEEP_ALIVE_DEFAULT = 60;
+    private static final int DEFAULT_WAIT_TIMEOUT = 30;
+    private static final int DEFAULT_TIMES_DELAY = 1000;
+    private static final int DEFAULT_TIMES_PERIOD = 10000;
 
     public OnConnectStatusCB getOnConnectStatusCB() {
         return onConnectStatusCB;
@@ -38,14 +37,13 @@ public class IoTMqttClient {
         this.onConnectStatusCB = onConnectStatusCB;
     }
 
-    private OnConnectStatusCB onConnectStatusCB;
+    public AppCoreClient getAppCoreClient() {
+        return appCoreClient;
+    }
 
-    private String[] topics;
-
-    private static final int DEFAULT_KEEP_ALIVE_DEFAULT = 60;
-    private static final int DEFAULT_WAIT_TIMEOUT = 30;
-    private static final int DEFAULT_TIMES_DELAY = 1000;
-    private static final int DEFAULT_TIMES_PERIOD = 10000;
+    public void setAppCoreClient(AppCoreClient appCoreClient) {
+        this.appCoreClient = appCoreClient;
+    }
 
     public IMqttToken getToken() {
         return token;
