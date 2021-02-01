@@ -230,7 +230,7 @@ public class AppCoreClient implements ICore, OnRecvData {
     }
 
     public void onConnectStatusCB(boolean bool, String details) {
-        if (bool == true) {
+        if (bool) {
             System.out.println("APP SDK onConnectStatus called, status:" + true + details);
 
             //Connected
