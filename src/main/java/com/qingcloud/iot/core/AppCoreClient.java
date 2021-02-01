@@ -13,14 +13,16 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 
 import java.util.ArrayList;
 
-public class AppCoreClient implements ICore, OnConnectStatusCB {
+public class AppCoreClient implements ICore, OnRecvData {
+
+    private AppCoreCallback coreCallback;
 
     private AppSdkRuntimeType appType;
     private Object messageParam;
+
     private AppSdkMessageCB messageCB;
     private AppSdkEventCB eventCB;
 
-    private OnConnectStatusCB connectStatusCallback;
     private Object eventParam;
     private IoTMqttClient ioTMqttClient;
     private Codec codec;
@@ -29,6 +31,35 @@ public class AppCoreClient implements ICore, OnConnectStatusCB {
     private String[] serviceIds;
     private String clientId;
     private String url;
+
+    //api sdk内使用
+    protected String appId;
+    protected String identifier;
+    protected String deviceId;
+
+    public AppCoreCallback getCoreCallback() {
+        return coreCallback;
+    }
+
+    public void setCoreCallback(AppCoreCallback coreCallback) {
+        this.coreCallback = coreCallback;
+    }
+
+    public void setMessageCB(AppSdkMessageCB messageCB) {
+        this.messageCB = messageCB;
+    }
+
+    public void setEventCB(AppSdkEventCB eventCB) {
+        this.eventCB = eventCB;
+    }
+
+    protected AppSdkMessageCB getMessageCB() {
+        return messageCB;
+    }
+
+    protected AppSdkEventCB getEventCB() {
+        return eventCB;
+    }
 
     public IoTMqttClient getIoTMqttClient() {
         return ioTMqttClient;
@@ -50,34 +81,33 @@ public class AppCoreClient implements ICore, OnConnectStatusCB {
         return url;
     }
 
-    public OnConnectStatusCB getConnectStatusCB() {
-        return connectStatusCallback;
-    }
-
-    public void setConnectStatusCB(OnConnectStatusCB connectStatusCB) {
-        this.connectStatusCallback = connectStatusCB;
-    }
-
-    public AppCoreClient(AppSdkRuntimeType type,AppSdkMessageCB messageCB,Object messageParam,AppSdkEventCB eventCB,Object eventParam) {
+    public AppCoreClient(AppSdkRuntimeType type,AppSdkMessageCB messageCB,AppSdkEventCB eventCB,String[] serviceIds) {
         this.appType = type;
         this.messageCB = messageCB;
-        this.messageParam = messageParam;
+        this.messageParam = new Object();
         this.eventCB = eventCB;
-        this.eventParam = eventParam;
+        this.eventParam = new Object();
         this.clientId = "";
         this.url = "";
+        this.serviceIds = serviceIds;
     }
 
-    public AppCoreClient() {
-        this(null, null, new Object(), null, new Object());
+    public AppCoreClient(AppSdkRuntimeType type,AppSdkMessageCB messageCB,AppSdkEventCB eventCB) {
+        this(type,messageCB,eventCB,null);
     }
 
     public AppCoreClient(AppSdkRuntimeType type) {
-        this(type, null, new Object(), null, new Object());
+        this(type, null, null, null);
+    }
+
+    public AppCoreClient() {
+        this(AppSdkRuntimeType.RuntimeType_Docker, null, null, null);
     }
 
     @Override
     public void init() {
+        this.setCoreCallback(new AppCoreCallback(this));
+
         this.cfg = new EdgeConfig();
         try {
             this.cfg.load(appType);
@@ -85,6 +115,8 @@ public class AppCoreClient implements ICore, OnConnectStatusCB {
             e.printStackTrace();
         }
         this.codec = new Codec(cfg.appId, cfg.deviceId, cfg.thingId);
+        this.appId = this.codec.getAppId();
+        this.deviceId = this.codec.getDeviceId();
 
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(cfg.deviceId);
@@ -102,6 +134,7 @@ public class AppCoreClient implements ICore, OnConnectStatusCB {
 
         try {
             this.ioTMqttClient = new IoTMqttClient(clientId,url,this::onConnectStatusCB);
+            this.ioTMqttClient.setAppCoreClient(this);
         } catch (MqttException e) {
             this.codec = null;
             this.cfg = null;
@@ -146,66 +179,6 @@ public class AppCoreClient implements ICore, OnConnectStatusCB {
         ioTMqttClient.stop();
     }
 
-    @Override
-    public void onConnectStatusCB(boolean bool, String details) {
-        if (bool == true) {
-            System.out.println("APP SDK onConnectStatus called, status is connected");
-
-            //Connected
-            if (this.ioTMqttClient == null || this.codec == null || this.cfg == null) {
-                System.out.println("APP SDK onConnected subscribe topics failed, err: not init");
-                return;
-            }
-
-            //Callback connected event
-            if (this.eventCB != null) {
-                AppSdkEventData appSdkEventData = new AppSdkEventData(AppSdkEventType.EventType_Connected);
-                this.eventCB.appSdkEventCB(appSdkEventData, eventParam);
-            }
-
-            ArrayList<String> arrayList = new ArrayList<>();
-            AppSdkMessage appSdkMessage = new AppSdkMessage();
-            appSdkMessage = codec.encodeTopic(TopicTypeConvert.TopicType_SubscribeProperty, "+");
-            if (appSdkMessage == null || appSdkMessage.error != null) {
-                System.out.println("APP SDK onConnected EncodeTopic failed, topicType:" + TopicTypeConvert.TopicType_SubscribeProperty + "error:" + appSdkMessage.error);
-            } else {
-                arrayList.add(appSdkMessage.topic);
-            }
-
-            appSdkMessage = codec.encodeTopic(TopicTypeConvert.TopicType_SubscribeEvent, "+");
-            if (appSdkMessage == null || appSdkMessage.error != null) {
-                System.out.println("APP SDK onConnected EncodeTopic failed, topicType:" + TopicTypeConvert.TopicType_SubscribeEvent + "error:" + appSdkMessage.error);
-            } else {
-                arrayList.add(appSdkMessage.topic);
-            }
-
-            int size = arrayList.size();
-            String[] array = arrayList.toArray(new String[size]);
-
-            System.out.println("topics size:" + array.length);
-            for (int i=0;i<size;++i) {
-                System.out.println("topics:" + array[i]);
-            }
-
-            try {
-                ioTMqttClient.getMqttClient().setCallback(new IoTMqttCallback(ioTMqttClient));
-
-                System.out.println("APP SDK onConnected subscribe topics success!");
-                ioTMqttClient.subscribeMultiple(array, this::onRecvData);
-
-            } catch (MqttException e) {
-                System.out.println("APP SDK onConnected subscribe topics failed, err: " + e.getMessage());
-                e.printStackTrace();
-            }
-
-        } else {
-            if (this.eventCB != null) {
-                AppSdkEventData appSdkEventData = new AppSdkEventData(AppSdkEventType.EventType_Connected);
-                this.eventCB.appSdkEventCB(appSdkEventData, eventParam);
-            }
-        }
-    }
-
     public Error sendMessage(AppSdkMessageData data) throws Exception {
         if (this.ioTMqttClient == null || this.codec == null || this.cfg == null) {
             return new Error("APP SDK send message failed, err: not init");
@@ -221,17 +194,20 @@ public class AppCoreClient implements ICore, OnConnectStatusCB {
 
         switch (data.type) {
             case MessageType_Property:
-                topicTypeStr = TopicTypeConvert.TopicType_PublishProperty;
+                topicTypeStr = TopicTypeConvert.TOPIC_TYPE_PUB_PROPERTY;
                 topicType = TopicType.TopicType_PublishProperty;
                 break;
             case MessageType_Event:
-                topicTypeStr = TopicTypeConvert.TopicType_PublishEvent;
+                topicTypeStr = TopicTypeConvert.TOPIC_TYPE_PUB_EVENT;
                 topicType = TopicType.TopicType_PublishEvent;
                 break;
             case MessageType_ServiceCall:
-                topicTypeStr = TopicTypeConvert.TopicType_PublishService;
+                topicTypeStr = TopicTypeConvert.TOPIC_TYPE_PUB_SERVICE;
                 topicType = TopicType.TopicType_PublishService;
                 break;
+            case MessageType_ServiceReply:
+                topicTypeStr = TopicTypeConvert.TOPIC_TYPE_PUB_SERVICE_REPLY;
+                topicType = TopicType.TopicType_PublishServiceReply;
             default:
                 return new Error("APP SDK send message failed, err: unsupported message type");
         }
@@ -239,35 +215,111 @@ public class AppCoreClient implements ICore, OnConnectStatusCB {
         String publishTopic = "";
         byte[] publishData = null;
 
-        if (data.type == AppSdkMessageType.MessageType_Property
-                || data.type == AppSdkMessageType.MessageType_Event
-                || data.type == AppSdkMessageType.MessageType_ServiceCall) {
+        AppSdkMessage appSdkMessage = new AppSdkMessage();
+        appSdkMessage = codec.encodeMessage(topicTypeStr,data.payload);
 
-            AppSdkMessage appSdkMessage = new AppSdkMessage();
-            appSdkMessage = codec.encodeMessage(topicTypeStr,data.payload);
-
-            if (appSdkMessage == null || appSdkMessage.error != null) {
-                System.out.println("encodeMessage Error:" + appSdkMessage.error.toString());
-            }
-
-            publishTopic = appSdkMessage.topic;
-            publishData = appSdkMessage.payload;
+        if (appSdkMessage == null || appSdkMessage.error != null) {
+            System.out.println("encodeMessage Error:" + appSdkMessage.error.toString());
         }
 
-        System.out.println("sendMessage publishTopic:" + publishTopic);
-        System.out.println("sendMessage publishData:" + new String(publishData));
+        publishTopic = appSdkMessage.topic;
+        publishData = appSdkMessage.payload;
+
         ioTMqttClient.publish(publishTopic, 0, publishData);
         return null;
     }
 
-    private void onRecvData(String topic, byte[] payload) {
+    public void onConnectStatusCB(boolean bool, String details) {
+        if (bool) {
+            System.out.println("APP SDK onConnectStatus called, status:" + true + details);
+
+            //Connected
+            if (this.ioTMqttClient == null || this.codec == null || this.cfg == null) {
+                System.out.println("APP SDK onConnected subscribe topics failed, err: not init");
+                return;
+            }
+
+            //Callback connected event
+            if (this.eventCB != null) {
+                AppSdkEventData appSdkEventData = new AppSdkEventData(AppSdkEventType.EventType_Connected);
+                this.eventCB.appSdkEventCB(appSdkEventData, eventParam);
+            }
+
+            ArrayList<String> arrayList = new ArrayList<>();
+
+            AppSdkMessage appSdkMessage = new AppSdkMessage();
+
+            if (this.identifier == null || this.identifier.equals("")) {
+                System.out.println("APP SDK onConnected topics init failed, err: not init");
+            }
+
+            appSdkMessage = codec.encodeTopic(TopicTypeConvert.TOPIC_TYPE_SUB_PROPERTY, this.identifier);
+            if (appSdkMessage == null || appSdkMessage.error != null) {
+                System.out.println("APP SDK onConnected EncodeTopic failed, topicType:" + TopicTypeConvert.TOPIC_TYPE_SUB_PROPERTY + "error:" + appSdkMessage.error);
+            } else {
+                if (appSdkMessage.topic != null && !appSdkMessage.topic.equals("")) {
+                    arrayList.add(appSdkMessage.topic);
+                    System.out.println("TopicType_SubscribeProperty topic:" + appSdkMessage.topic);
+                }
+            }
+
+            appSdkMessage = codec.encodeTopic(TopicTypeConvert.TOPIC_TYPE_SUB_EVENT, this.identifier);
+            if (appSdkMessage == null || appSdkMessage.error != null) {
+                System.out.println("APP SDK onConnected EncodeTopic failed, topicType:" + TopicTypeConvert.TOPIC_TYPE_SUB_EVENT + "error:" + appSdkMessage.error);
+            } else {
+                if (appSdkMessage.topic != null && !appSdkMessage.topic.equals("")) {
+                    arrayList.add(appSdkMessage.topic);
+                    System.out.println("TopicType_SubscribeEvent topic:" + appSdkMessage.topic);
+                }
+            }
+
+            for (String srvId : serviceIds) {
+                appSdkMessage = codec.encodeTopic(TopicTypeConvert.TOPIC_TYPE_SUB_SERVICE, srvId);
+
+                if (appSdkMessage == null || appSdkMessage.error != null) {
+                    System.out.println("APP SDK onConnected EncodeTopic failed, topicType:" + TopicTypeConvert.TOPIC_TYPE_SUB_SERVICE + "error:" + appSdkMessage.error);
+                } else {
+                    if (appSdkMessage.topic != null && !appSdkMessage.topic.equals("")) {
+                        arrayList.add(appSdkMessage.topic);
+                        System.out.println("TopicType_SubscribeEvent topic:" + appSdkMessage.topic);
+                    }
+                }
+            }
+
+            //SubscribeMultiple
+            int size = arrayList.size();
+            String[] topics = arrayList.toArray(new String[size]);
+
+            for (int i=0;i<topics.length;++i) {
+                System.out.println("onConnectStatusCB topic:" + topics[i]);
+            }
+            ioTMqttClient.getMqttClient().setCallback(new IoTMqttCallback(ioTMqttClient));
+            try {
+                ioTMqttClient.subscribeMultiple(topics,this::onRecvData);
+            } catch (MqttException e) {
+                e.printStackTrace();
+            }
+
+        } else {
+            System.out.println("APP SDK onConnectStatus called, status:" + false + details);
+            if (this.eventCB != null) {
+                AppSdkEventData appSdkEventData = new AppSdkEventData(AppSdkEventType.EventType_Disconnected);
+                this.eventCB.appSdkEventCB(appSdkEventData, eventParam);
+            }
+        }
+    }
+
+    @Override
+    public void onRecvData(String topic, byte[] payload) {
         if (this.ioTMqttClient == null || this.codec == null || this.cfg == null) {
             System.out.println("APP SDK onRecvData failed, err: not init");
             return;
         }
 
         AppSdkMessage appSdkMessage = codec.decodeMessage(topic, payload);
-        if (appSdkMessage == null || appSdkMessage.error != null) {
+        appSdkMessage.topic = topic;
+
+        if (appSdkMessage.error != null) {
             System.out.println("APP SDK onRecvData failed, err: not init" + appSdkMessage.error);
             return;
         }
@@ -278,11 +330,11 @@ public class AppCoreClient implements ICore, OnConnectStatusCB {
 
         switch (topicType) {
             case TopicType_SubscribeProperty:
-            case TopicType_PublishProperty:
+//            case TopicType_PublishProperty:
                 messageType = AppSdkMessageType.MessageType_Property;
                 break;
             case TopicType_SubscribeEvent:
-            case TopicType_PublishEvent:
+//            case TopicType_PublishEvent:
                 messageType = AppSdkMessageType.MessageType_Event;
                 break;
             case TopicType_SubscribeService:

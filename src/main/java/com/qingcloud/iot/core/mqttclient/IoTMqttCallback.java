@@ -20,6 +20,10 @@ public class IoTMqttCallback implements MqttCallbackExtended {
         if (ioTMqttClient.getOnConnectedCallback() != null) {
             ioTMqttClient.getOnConnectedCallback().onConnectedCallback(reconnect,serverURI);
         }
+
+        if (ioTMqttClient.getOnConnectStatusCB() != null) {
+            ioTMqttClient.getOnConnectStatusCB().onConnectStatusCB(reconnect, serverURI);
+        }
     }
 
     @Override
@@ -29,13 +33,17 @@ public class IoTMqttCallback implements MqttCallbackExtended {
         if (ioTMqttClient.getOnDisconnectedCallback() != null) {
             ioTMqttClient.getOnDisconnectedCallback().onDisconnectedCallback(true, cause);
         }
+
+        if (ioTMqttClient.getOnConnectStatusCB() != null) {
+            ioTMqttClient.getOnConnectStatusCB().onConnectStatusCB(false, cause.getLocalizedMessage());
+        }
     }
 
     @Override
     public void messageArrived(String topic,MqttMessage message) {
-
-        if (ioTMqttClient.getMessageCallback() != null) {
-            ioTMqttClient.getMessageCallback().messageCallback(topic, message.getPayload());
+        System.out.println("IoTMqttCallback messageArrived:" + topic + ", message:" + new String(message.getPayload()));
+        if (ioTMqttClient.getOnRecvData() != null) {
+            ioTMqttClient.getOnRecvData().onRecvData(topic,message.getPayload());
         }
     }
 

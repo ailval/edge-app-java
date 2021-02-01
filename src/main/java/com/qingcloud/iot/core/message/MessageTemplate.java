@@ -15,7 +15,7 @@ public class MessageTemplate {
     }
 
     public MessageTemplate() {
-        new MessageTemplate("DefaultIdentifier");
+        new MessageTemplate(""); //仅仅不需要identifier时，使用
     }
 
     public String getMessageTemplateProperty() {

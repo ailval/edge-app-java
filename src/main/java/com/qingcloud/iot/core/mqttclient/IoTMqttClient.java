@@ -8,6 +8,8 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import java.util.*;
 
 public class IoTMqttClient {
+
+    private AppCoreClient appCoreClient;
     private MqttClient mqttClient;
     private MqttConnectOptions mqttConnectOptions;
 
@@ -15,12 +17,11 @@ public class IoTMqttClient {
     private TimerTask timerTask;
     private IMqttToken token;
 
+    private OnRecvData onRecvData;
     private IMessageCallback messageCallback;
-    private IEventCallback eventCallback;
-    private OnConnectStatusCB onConnectStatusCallback;
     private IOnConnectedCallback onConnectedCallback;
     private IOnDisconnectedCallback onDisconnectedCallback;
-
+    private OnConnectStatusCB onConnectStatusCB;
     private String[] topics;
 
     private static final int DEFAULT_KEEP_ALIVE_DEFAULT = 60;
@@ -28,12 +29,36 @@ public class IoTMqttClient {
     private static final int DEFAULT_TIMES_DELAY = 1000;
     private static final int DEFAULT_TIMES_PERIOD = 10000;
 
+    public OnConnectStatusCB getOnConnectStatusCB() {
+        return onConnectStatusCB;
+    }
+
+    public void setOnConnectStatusCB(OnConnectStatusCB onConnectStatusCB) {
+        this.onConnectStatusCB = onConnectStatusCB;
+    }
+
+    public AppCoreClient getAppCoreClient() {
+        return appCoreClient;
+    }
+
+    public void setAppCoreClient(AppCoreClient appCoreClient) {
+        this.appCoreClient = appCoreClient;
+    }
+
     public IMqttToken getToken() {
         return token;
     }
 
     public void setToken(IMqttToken token) {
         this.token = token;
+    }
+
+    public OnRecvData getOnRecvData() {
+        return onRecvData;
+    }
+
+    public void setOnRecvData(OnRecvData onRecvData) {
+        this.onRecvData = onRecvData;
     }
 
     public IOnConnectedCallback getOnConnectedCallback() {
@@ -60,14 +85,6 @@ public class IoTMqttClient {
         this.topics = topics;
     }
 
-    public IEventCallback getEventCallback() {
-        return eventCallback;
-    }
-
-    public void setEventCallback(IEventCallback eventCallback) {
-        this.eventCallback = eventCallback;
-    }
-
     public MqttClient getMqttClient() {
         return mqttClient;
     }
@@ -84,14 +101,6 @@ public class IoTMqttClient {
         this.mqttConnectOptions = mqttConnectOptions;
     }
 
-    public OnConnectStatusCB getConnectStatusCB() {
-        return onConnectStatusCallback;
-    }
-
-    public void setConnectStatusCB(OnConnectStatusCB connectStatusCB) {
-        this.onConnectStatusCallback = connectStatusCB;
-    }
-
     public IMessageCallback getMessageCallback() {
         return messageCallback;
     }
@@ -101,9 +110,7 @@ public class IoTMqttClient {
     }
 
     public IoTMqttClient(String clientId,String url,OnConnectStatusCB connectStatusCB,IMessageCallback messageCallback,IEventCallback eventCallback) throws MqttException {
-        this.onConnectStatusCallback = connectStatusCB;
         this.messageCallback = messageCallback;
-        this.eventCallback = eventCallback;
         this.mqttClient = new MqttClient(url, clientId, new MemoryPersistence());
         MqttConnectOptions mqttConnectOptions = new MqttConnectOptions();
         mqttConnectOptions.setServerURIs(new String[]{url});
@@ -123,29 +130,35 @@ public class IoTMqttClient {
     }
 
     public void start () throws MqttException {
-        this.tryConnect();
+        this.doConnect();
     }
 
     public void stop () throws MqttException {
-        this.cancelConnect();
+        this.doDisconnect();
     }
 
-    public void subscribe(String topic, int qos, IMessageCallback messageCallback) throws Exception {
+    //AppCoreClient callback
+    public void subscribe(String topic, int qos, OnRecvData onRecvData) throws Exception {
         if ((topic == null || qos < 0 || qos > 2))
             throw new Exception("invalid arguments");
 
-        this.setMessageCallback(messageCallback);
+        if (onRecvData != null) {
+            this.onRecvData = onRecvData;
+        }
+
         this.mqttClient.subscribe(topic,qos);
     }
 
-    public void subscribeMultiple(String[] topics, IMessageCallback messageCallback) throws MqttException {
-        this.setMessageCallback(messageCallback);
+    public void subscribeMultiple(String[] topics, OnRecvData onRecvData) throws MqttException {
+        if (onRecvData != null) {
+            this.onRecvData = onRecvData;
+        }
 
         for (int i=0; i<topics.length; i++) {
             if (topics[i] != null && !topics[i].equals("")) {
                 String topic = topics[i];
                 try {
-                    this.subscribe(topic,0,messageCallback);
+                    this.subscribe(topic,0,onRecvData);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -166,10 +179,9 @@ public class IoTMqttClient {
 
     public void doConnect() throws MqttException {
         if (this.mqttClient.isConnected()) {
-            return;
         } else {
             if (mqttConnectOptions == null) {
-                tryConnect();
+                this.tryConnect();
             } else {
                 this.mqttClient.connectWithResult(mqttConnectOptions);
             }
@@ -177,11 +189,7 @@ public class IoTMqttClient {
     }
 
     public void doDisconnect() throws MqttException {
-        if (this.mqttClient.isConnected()) {
-            this.mqttClient.disconnect();
-        } else {
-            return;
-        }
+        this.cancelConnect();
     }
 
     /*
@@ -198,7 +206,7 @@ public class IoTMqttClient {
             public void run() {
                 if (token instanceof IMqttToken && mqttClient.isConnected()) {
                     //调试用，显示Mqttclient是否连接
-                    System.out.println("tryConnect token:" + token + ", isConnected:" + mqttClient.isConnected());
+//                    System.out.println("Connecting ... token:" + token + ", isConnected:" + mqttClient.isConnected());
 
                     return;
                 } else {
@@ -208,7 +216,7 @@ public class IoTMqttClient {
                         e.printStackTrace();
                     }
                     //调试用，显示Mqttclient是否重新连接
-                    System.out.println("tryConnect new token:" + token + ", isConnected:" + mqttClient.isConnected());
+//                    System.out.println("Reconnecting ... token:" + token + ", isConnected:" + mqttClient.isConnected());
                 }
             }
         };
@@ -219,13 +227,12 @@ public class IoTMqttClient {
     }
 
     private void cancelConnect() throws MqttException {
-        if (this.timer == null) {
-            return;
-        } else {
+        if (this.timer != null) {
             this.timer.cancel();
             this.timer.purge();
         }
-
-        this.doDisconnect();
+        if (this.mqttClient.isConnected()) {
+            this.mqttClient.disconnect();
+        }
     }
 }

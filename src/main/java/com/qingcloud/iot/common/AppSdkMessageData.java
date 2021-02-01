@@ -11,6 +11,10 @@ public class AppSdkMessageData {
         this.payload = payload;
     }
 
+    public AppSdkMessageData(AppSdkMessageType type) {
+        this(type, null);
+    }
+
     public AppSdkMessageData() {
         this(null, null);
     }

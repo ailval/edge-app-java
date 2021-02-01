@@ -4,15 +4,15 @@ import com.qingcloud.iot.common.TopicTypeConvert;
 
 public class AppSdkMessage {
 
+    protected String originalTopic;
     public String topic;
     public TopicTypeConvert.TopicType topicType;
     public String topicTypeString; //应该从TopicTypeConvert方法获取
-
     public String appId;
+    public Error error;
+
     public String identifier;
     public byte[] payload;
-
-    public Error error;
 
     public AppSdkMessage() {
         topic = "";
@@ -21,6 +21,14 @@ public class AppSdkMessage {
         appId = "";
         identifier = "";
         error = null;
+    }
+
+    public String getOriginalTopic() {
+        return originalTopic;
+    }
+
+    public void setOriginalTopic(String originalTopic) {
+        this.originalTopic = originalTopic;
     }
 
     public String getTopicTypeString() {

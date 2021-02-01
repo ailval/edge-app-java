@@ -1,7 +1,9 @@
 *.class
-/target/
+/target/classes/
+/target/generated-sources/
+/target/maven-archiver/
+/target/maven-status/
 .idea
 iotd-*
-/src/main/java/local/test/*
 /src/main/resources/
 /src/main/conf/
