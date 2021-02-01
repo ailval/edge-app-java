@@ -206,17 +206,18 @@ public class IoTMqttClient {
             public void run() {
                 if (token instanceof IMqttToken && mqttClient.isConnected()) {
                     //调试用，显示Mqttclient是否连接
-//                    System.out.println("Connecting ... token:" + token + ", isConnected:" + mqttClient.isConnected());
+                    System.out.println("Connecting ... token:" + token + ", isConnected:" + mqttClient.isConnected());
 
                     return;
                 } else {
+                    //调试用，显示Mqttclient是否重新连接
+                    System.out.println("Reconnecting ... token:" + token + ", isConnected:" + mqttClient.isConnected());
+
                     try {
                         token = mqttClient.connectWithResult(mqttConnectOptions);
                     } catch (MqttException e) {
                         e.printStackTrace();
                     }
-                    //调试用，显示Mqttclient是否重新连接
-//                    System.out.println("Reconnecting ... token:" + token + ", isConnected:" + mqttClient.isConnected());
                 }
             }
         };
